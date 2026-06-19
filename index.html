@@ -3,11 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Billy Adamson</title>
+  <title>b</title>
   <link rel="icon" href="assets/robot-icon.png" type="image/png">
   <link rel="shortcut icon" href="assets/robot-icon.png" type="image/png">
   <link rel="apple-touch-icon" href="assets/robot-icon.png">
   <style>
+    @font-face {
+      font-family: 'futura-lt-w01-book';
+      font-style: normal;
+      font-weight: 400;
+      src: url('//static.parastorage.com/fonts/v2/790166f1-b347-4f16-8a29-f0c4931a7c35/v1/futura-lt-w01-book.woff2') format('woff2');
+      font-display: swap;
+    }
+
     :root {
       --bg: #1c1d20;
       --panel: rgba(255, 255, 255, 0.04);
@@ -26,7 +34,7 @@
       min-height: 100%;
       background: var(--bg);
       color: var(--text);
-      font-family: Futura, "Trebuchet MS", "Avenir Next", Avenir, sans-serif;
+      font-family: 'futura-lt-w01-book', Futura, "Trebuchet MS", sans-serif;
       letter-spacing: 0.01em;
     }
 
@@ -133,73 +141,67 @@
 
     .card {
       display: block;
+      position: relative;
+      overflow: hidden;
       border: 1px solid var(--panel-border);
-      background: var(--panel);
-      padding: 26px;
-      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
       min-height: 320px;
+      transition: transform 160ms ease, border-color 160ms ease;
     }
 
     .card:hover {
       transform: translateY(-4px);
       border-color: rgba(255,255,255,0.34);
-      background: rgba(255,255,255,0.05);
     }
 
-    .card-head {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 20px;
-      margin-bottom: 18px;
-    }
-
-    .card-title {
-      margin: 0;
-      font-size: clamp(1.8rem, 2.6vw, 2.7rem);
-      line-height: 1.08;
-      font-weight: 600;
-      text-transform: lowercase;
-      letter-spacing: 0.08em;
-      max-width: 18ch;
-      text-wrap: balance;
-    }
-
-    .arrow {
-      flex: 0 0 auto;
-      font-size: 2rem;
-      line-height: 1;
-      opacity: 0.8;
-      padding-top: 6px;
-    }
-
-    .card-desc {
-      margin: 0 0 20px;
-      font-size: 0.98rem;
-      line-height: 1.7;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      max-width: 34ch;
-    }
-
-    .card-year {
-      margin: 0 0 18px;
-      font-size: 0.78rem;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--muted);
-      opacity: 0.6;
+    .card:hover .card-img {
+      transform: scale(1.04);
     }
 
     .card-img {
+      position: absolute;
+      inset: 0;
       width: 100%;
-      height: 200px;
-      object-fit: contain;
+      height: 100%;
+      object-fit: cover;
       display: block;
-      margin-top: auto;
-      box-shadow: 0 12px 30px var(--shadow);
-      background: rgba(255,255,255,0.04);
+      transition: transform 320ms ease;
+    }
+
+    .card-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.18) 60%, transparent 100%);
+    }
+
+    .card-body {
+      position: relative;
+      z-index: 1;
+      padding: 22px 24px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      min-height: 320px;
+    }
+
+    .card-title {
+      margin: 0 0 6px;
+      font-size: clamp(1.4rem, 2.2vw, 2.2rem);
+      line-height: 1.1;
+      font-weight: 600;
+      text-transform: lowercase;
+      letter-spacing: 0.08em;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    .card-year {
+      margin: 0;
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0.7;
     }
 
     .site-disclaimer {
@@ -313,57 +315,57 @@
 
     <section class="featured" aria-label="Featured projects">
       <a class="card" href="minecraft.html">
-        <div class="card-head">
-          <h2 class="card-title">computational minecraft</h2>
-          <div class="arrow">→</div>
-        </div>
-        <p class="card-year">2023</p>
         <img class="card-img" src="assets/minecraft-preview.png" alt="Minecraft project preview" />
+        <div class="card-overlay"></div>
+        <div class="card-body">
+          <h2 class="card-title">computational minecraft</h2>
+          <p class="card-year">2023</p>
+        </div>
       </a>
 
       <a class="card" href="festi.html">
-        <div class="card-head">
-          <h2 class="card-title">vulkan graphics engine in c++</h2>
-          <div class="arrow">→</div>
-        </div>
-        <p class="card-year">2024</p>
         <img class="card-img" src="assets/vulkan-preview.png" alt="Vulkan project preview" />
+        <div class="card-overlay"></div>
+        <div class="card-body">
+          <h2 class="card-title">vulkan graphics engine in c++</h2>
+          <p class="card-year">2024</p>
+        </div>
       </a>
 
       <a class="card" href="philosophy.html">
-        <div class="card-head">
-          <h2 class="card-title">discussion about philosophical pessimism</h2>
-          <div class="arrow">→</div>
-        </div>
-        <p class="card-year">2024</p>
         <img class="card-img" src="assets/philosophy.png" alt="Philosophy project preview" />
+        <div class="card-overlay"></div>
+        <div class="card-body">
+          <h2 class="card-title">discussion about philosophical pessimism</h2>
+          <p class="card-year">2024</p>
+        </div>
+      </a>
+
+      <a class="card" href="blockchain.html">
+        <img class="card-img" src="assets/arcrypt.png" alt="Arcrypt project preview" />
+        <div class="card-overlay"></div>
+        <div class="card-body">
+          <h2 class="card-title">Arcrypt</h2>
+          <p class="card-year">2026</p>
+        </div>
       </a>
 
       <div class="card">
-        <div class="card-head">
-          <h2 class="card-title">building on solana</h2>
-          <div class="arrow">→</div>
-        </div>
-        <p class="card-year">2026 — tba</p>
-        <img class="card-img" src="assets/arcrypt.png" alt="Arcrypt project preview" />
-      </div>
-
-      <div class="card">
-        <div class="card-head">
-          <h2 class="card-title">building a quantum computer</h2>
-          <div class="arrow">→</div>
-        </div>
-        <p class="card-year">summer internship project 2026 — tba</p>
         <img class="card-img" src="assets/quantum.jpg" alt="Quantum computer project preview" />
+        <div class="card-overlay"></div>
+        <div class="card-body">
+          <h2 class="card-title">building a quantum computer</h2>
+          <p class="card-year">summer internship project 2026 — tba</p>
+        </div>
       </div>
 
       <div class="card">
-        <div class="card-head">
-          <h2 class="card-title">oxai</h2>
-          <div class="arrow">→</div>
-        </div>
-        <p class="card-year">2026 — tba</p>
         <img class="card-img" src="assets/oxai.png" alt="OxAI project preview" />
+        <div class="card-overlay"></div>
+        <div class="card-body">
+          <h2 class="card-title">oxai</h2>
+          <p class="card-year">2026 — tba</p>
+        </div>
       </div>
     </section>
   </main>
