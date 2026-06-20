@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Building the first private smart-contract on Solana</title>
+  <title>b</title>
   <script>
     MathJax = {
       tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
@@ -140,6 +140,15 @@
       border: 1px solid var(--panel-border);
     }
 
+    .caption {
+      margin-top: 10px !important;
+      font-size: 0.82rem !important;
+      line-height: 1.6 !important;
+      color: var(--muted);
+      opacity: 0.6;
+      letter-spacing: 0.03em;
+    }
+
     .appendix-divider {
       border: none;
       border-top: 1px solid var(--panel-border);
@@ -252,7 +261,7 @@
 
   <!-- paragraph 6 — lending -->
   <div class="section">
-    <p>Or consider lending. All on-chain lending programs must ensure you do not go into net debt, as there is no law-enforcement agency that will come and force you to pay up blockchain tokens to the lender. Therefore, you need to place a deposit down on a loan, using a different token as collateral. You can use part of the deposit to pay back the loan if you need to. This might seem counterintuitive, but this is very effective if your deposit increases in value relative to the debt, which is usually a highly liquid token, analogous to dollars (see Appendix III on liquidity). This is how wealthy people buy things without spending large amounts of their stock. Take out a loan, spend it on whatever you want, your deposit increases in value, then you can sell less of your stock to repay the dollar debt. This comes with risk, because sometimes the deposit decreases in value. Blockchains cannot sign signatures for you, and hence if your deposit decreases in value such that it approaches the value of the debt, the contract suddenly enables anybody to repay your loan for you — repay the debt, get the deposit, which is still slightly more than the loan. This also comes with risk, because you are buying a depreciating asset. This is called "liquidation", and costs borrowers money.</p>
+    <p>Or consider lending. All on-chain lending programs must ensure you do not go into net debt, as there is no law-enforcement agency that will come and force you to pay up blockchain tokens to the lender. Therefore, you need to place a deposit down on a loan, using a different token as collateral. You can use part of the deposit to pay back the loan if you need to. This might seem counterintuitive, but this is very effective if your deposit increases in value relative to the debt, which is usually a highly liquid token, analogous to dollars (see Appendix II on liquidity). This is how wealthy people buy things without spending large amounts of their stock. Take out a loan, spend it on whatever you want, your deposit increases in value, then you can sell less of your stock to repay the dollar debt. This comes with risk, because sometimes the deposit decreases in value. Blockchains cannot sign signatures for you, and hence if your deposit decreases in value such that it approaches the value of the debt, the contract suddenly enables anybody to repay your loan for you — repay the debt, get the deposit, which is still slightly more than the loan. This also comes with risk, because you are buying a depreciating asset. This is called "liquidation", and costs borrowers money.</p>
   </div>
 
   <!-- paragraph 7 — why privacy matters -->
@@ -317,6 +326,7 @@
   <!-- paragraph 17 — Cerberus -->
   <div class="section">
     <p>This is the best way of solving all the above problems. Its both fast and maintains full encryption. The only vulnerability is that nodes may try to collaborate to compromise the network and share their pieces together. Fortunately, Arcium has developed the "Cerberus" protocol that uses a "dishonest majority" model to combat this. In Cerberus, even if every node but one is maliciously collaborating, they are still unable to put their pieces together to get any info at all about the full plaintext. Hence, any cautious developer could just run their own Arx node to be sure there is at least one behaving honestly. In reality, there are strong economic incentives to perform computation honestly, in the same way there is incentive to build blocks correctly. The protocol is extremely secure from attack.</p>
+    <img src="assets/cerberus.png" alt="Cerberus protocol diagram" class="section-image">
   </div>
 
   <!-- paragraph 18 — Solana + Arcium -->
@@ -324,9 +334,88 @@
     <p>The great thing about Arcium is that it is built on top of Solana. Solana is the public state machine and Arcium is the encrypted state machine, working in tandem. This is like a giant encrypted super-computer. This means we could release an auction reward, or liquidate a borrower, or match buyers within our existing smart contracts — we can simply use some Rust macros to transform our computations into encrypted ones. We also need to create encrypted circuits from scratch. Arcium have built their own modified Rust compiler, "Arcis", that only compiles circuits that can be run by Arx nodes, so we can simply transfer our encrypted function definitions from our smart contracts into a new encrypted-instructions Rust implementation, which is compiled with the new compiler. Arcis handles the raw maths and the smart contract handles transferring tokens, authorising wallets and so on. In short, the client interacts with the smart contract, the smart contract calls functions in the MXE (defined in Arcis), the MXE "calls back" its result into an account owned by the smart contract and the client reads this account via the smart contract.</p>
   </div>
 
-  <!-- paragraph 19 — WIP -->
+  <!-- paragraph 19 — place bid circuit -->
   <div class="section">
-    <p>We now have all the pieces in place to build a sealed auction on Solana. Here is an example of an encrypted circuit … <em>WIP</em></p>
+    <p>We now have all the pieces in place to build a sealed auction on Solana. Here is an example of an encrypted circuit.</p>
+    <img src="assets/placebidcircuit.png" alt="Place bid circuit" class="section-image">
+    <p class="caption">It simply determines if the new bid coming in is higher than the current highest, and updates it. We also store the second highest bid in case we want to do a Vickrey auction. More on that later.</p>
+  </div>
+
+  <!-- paragraph 20 — place bid smart contract -->
+  <div class="section">
+    <p>Then on the smart-contract side:</p>
+    <img src="assets/placebidSC.png" alt="Place bid smart contract" class="section-image">
+    <p class="caption">This function is called directly by TypeScript clients (websites). Notice how it takes in ciphertexts as its arguments and then passes them to <em>queue_computation()</em>. This is transferring the ciphertext to the Arcis MXE side.</p>
+  </div>
+
+  <!-- paragraph 21 — determine winner circuit -->
+  <div class="section">
+    <p>We also need a winner determining circuit. Here is the Arcis circuit:</p>
+    <img src="assets/determinewinnercircuit.png" alt="Determine winner circuit" class="section-image">
+  </div>
+
+  <!-- paragraph 22 — reveal / callback -->
+  <div class="section">
+    <p>Notice, <em>place_bid</em> uses <em>state_ctxt.owner.from_arcis()</em>, whereas determining winner calls "reveal". The former ensures only the bid placer can decrypt the callback associated with <em>place_bid</em>. This callback is just for logging purposes so the client can confirm their bid landed. More importantly, <em>.reveal()</em> in <em>determine_winner_first_price()</em> returns the computed winner public key and the winning bid amount as plaintext, so anyone can decrypt it. Here is the callback:</p>
+    <img src="assets/determinewinnercallback.png" alt="Determine winner callback" class="section-image">
+  </div>
+
+  <!-- paragraph 23 — callback explanation -->
+  <div class="section">
+    <p>We are able to deconstruct the structs defined within Arcis on the smart contract side, and then simply emit it as an event for clients to see.</p>
+  </div>
+
+  <!-- paragraph 24 — escrow problem -->
+  <div class="section">
+    <p>We have successfully implemented a sealed auction on Solana, with one caveat. What if people lie about how many tokens they have? All that's happened here is users have encrypted a number on their client, and then sent it to the MXE, and this returns the highest number at the end. People may not actually own that many tokens — or they might spend them before auction close.</p>
+    <p>We could record everyone's bids, and then only withdraw from the highest accounts that have tokens remaining. But this would require a potentially infinite array to be loaded into Arcis. The MXE does not support dynamic arrays and hence we would need to do an immensely expensive operation and cap our bidder account for every single bid placement. This is not an option. Modern auctions use "escrows" — you lock money in and then if you lose it is refunded back.</p>
+  </div>
+
+  <!-- paragraph 25 — escrow on Solana problem -->
+  <div class="section">
+    <p>How can we do that on Solana? If we just had a normal smart contract account to send the escrow to, everyone would see it. In ZCash, we could privately transfer money around to other users, but ZCash does not support smart contracts let alone MPC, and let alone a smart contract controlling an encrypted balance. Even if we could do that on Solana, it still wouldn't be enough. That is because we would need to ensure the value we encrypted and sent to the MXE is the same as what we locked away within some mysterious vault account.</p>
+  </div>
+
+  <!-- paragraph 26 — Umbra Privacy -->
+  <div class="section">
+    <p>Umbra Privacy is a protocol built on Arcium that enables you to control an encrypted balance. You can move tokens from your public Solana wallet (ATA) into the private "ETA" (encrypted token account). This is essentially a ledger remembering how many tokens each user has stored as encrypted shared state. If you are interested in ZK proofs and Merkle Trees, I would urge you to read more about it. Umbra raised more than 150 million USD last year in commitments for this protocol.</p>
+    <img src="assets/umbra.webp" alt="Umbra Privacy protocol" class="section-image">
+    <p>This approximately gives us some of the power of ZCash on Solana. Now, we can move tokens into an encrypted balance and place our bids from there. Amazingly, Umbra also enables accounts controlled by smart contracts (PDAs) to also have an ETA associated with them. This means we can generate an escrow ETA on the contract, and move tokens to the contract.</p>
+  </div>
+
+  <!-- paragraph 27 — remaining problems -->
+  <div class="section">
+    <p>A few issues emerge. Firstly, how do we ever "decrypt" this amount? The secret key of the vault account is never revealed since no human controls it, and so how do we get the tokens back out of the vault? Secondly, we still haven't resolved the issue of ensuring what is sent to Arcium is the same as what is sent to the Umbra ETA. One method would be to use a client-side ZK proof. The problem is that the ZK proof needs to be validated by the bid amount itself. This can only happen within the MXE and hence we need to not only build a complex ZK circuit on the client, we need to build a ZK validator in Arcis — this is entirely not feasible with the state of Arcis. Thirdly, Umbra transactions are normally done through their wallet client; we would need the Rust program itself to invoke the withdrawal directly.</p>
+  </div>
+
+  <!-- paragraph 28 — Arcrypt solution -->
+  <div class="section">
+    <p>I called the developers of Umbra and we devised a solution to solve this problem. It is called "Arcrypt". It works like this:</p>
+    <p>I call <em>deposit_bid()</em> from the client with my encrypted bid amount and the escrow PDA derived. I encrypt the bid amount against Umbra's MXE address, rather than my own. <em>deposit_bid()</em> performs a <strong>Cross-Program Invocation</strong> to the Umbra smart contract, which essentially means the program itself calls another program. Umbra gave me early access to their Rust integration client to do this.</p>
+    <p>Umbra is able to transmit my bid to its own MXE circuits because I encrypted it against their address. They move the tokens from my ETA to the escrow ETA. The callback returns the ciphertext of how much was moved with the Arcrypt MXE address.</p>
+    <p>Umbra CPIs back to the Arcrypt program where it can then transmit the bid amount to its own MXE. This then goes straight to our <em>place_bid</em> circuit as usual. We then do a similar process in reverse to refund the losers back. We can use the MXE to decrypt each person's amount, which gets persisted on a PDA so we know how much to take from their vault ETA.</p>
+    <p>This process enables us to run the first truly sealed auction on Solana. Submit a bid, commit tokens, and win.</p>
+  </div>
+
+  <!-- paragraph 29 — architecture diagram -->
+  <div class="section">
+    <img src="assets/arcryptdiagram.png" alt="Arcrypt system architecture" class="section-image" style="margin-top: 0;">
+    <p class="caption">"Anchor program" refers to the smart contract — Anchor is the tooling library for Solana smart contracts. "Arcium MXE" refers to the Arcis circuits. "Client" is the website you make bids from.</p>
+  </div>
+
+  <!-- paragraph 30 — token shares / IPO -->
+  <div class="section">
+    <p>The great thing about Solana is that company shares can be represented by tokens, which are traded like shares in traditional finance. You could then use this to launch a business via a sealed auction. Google IPOed with a sealed auction in 2004 to great success. Crafts.dev is doing this with Arcium too, but they didn't implement encrypted escrows like we did — hence, you can see how much everyone is putting on the table. It doesn't completely defeat the point however, because in both Arcrypt and Crafts we have a "uniform" auction mode. Essentially, you place down a "total tokens desired" and a "price per token" amount and then you deposit total tokens desired × price (also known as FDV) into a PDA. The price is then encrypted. In Arcrypt, we encrypt the token movement as well as the price. This means Crafts could not run a sealed auction with just a single winner (such as for art or an NFT) since FDV equals your bid. Arcrypt can, and has.</p>
+  </div>
+
+  <!-- paragraph 31 — auction mechanics -->
+  <div class="section">
+    <p>Auction mechanics is itself an intriguing area to research. In a Vickrey auction, the person with the second highest bid wins — that way, you are directly incentivised to bid your true value. I leave it as an exercise to you to think about why. Similarly, in a sealed auction you are also incentivised to bid your true value. The difference is that any public auction is still susceptible to bot manipulation and distortion due to hype. In a public auction, what normally happens is that there is very little activity until the end, when a bunch of bots rapidly outbid any real bids in the last five minutes. This deters human participation and prevents a gradual increasing price over time, which is what leads to the most genuine sale price. Bots cannot participate in sealed auctions since they have no information to go from — only humans can interact with it.</p>
+  </div>
+
+  <!-- paragraph 32 — closing -->
+  <div class="section">
+    <p>And that's it! Head on over to <a href="https://arcrypt.bid" target="_blank" rel="noopener" style="text-decoration: underline; opacity: 0.8;">arcrypt.bid</a> to bid for your favourite NFTs or launch a token with sealed auction liquidity bootstrapping.</p>
   </div>
 
   <!-- appendix -->
@@ -342,6 +431,11 @@
     <p>Validators across the world listen in for transactions and accept ones that meet the rules and have valid signatures. They arrange some of them into a "block" in the order they receive them in, until the block runs out of room. They then perform a hash of the block. The block consists of the transaction list, an additional "nonce" (not the British kind), and crucially, the hash of the previous block. The task is to find a nonce that causes the hash to contain a particular pattern. As hashes are pseudorandom and cannot be reversed, it takes a lot of brute force computational work to locate the correct nonce in proof-of-work schemes. It takes the global network of validators about 10 minutes for someone to find this hash on their own particular block, and hence new blocks are made every 10 minutes. Once the hash is found, it can be instantly validated and is added to the ledger by any validator following the rules. This then "connects" to the previous block because it contains the prior hash. The lucky validator is allowed to put a small "block reward" within their block, which credits their account with some coins — this is what "bitcoin mining" is.</p>
     <p>This system eliminates sybil attacks — that is, when an individual tries to dominate the network by creating many accounts. Computational power is what controls this network, and hence gaining access to more than 50% of computational power is required to have your own malicious blocks dominate (in major networks, this is not feasible). Blockchains are not entirely linear. Many people find a hash at roughly the same time, and hence two blocks are generated and "fork" the chain. Validators work on both until one gets a new block. A rule states that the longest blockchain is the definitive one. Exceptions to this can occur, primarily when people want to modify Bitcoin's core code, and hence the chain diverges into two completely separate networks (for instance, Bitcoin Cash split from Bitcoin in 2017).</p>
     <p>We now have a totally decentralized currency that people around the world can agree on. Bitcoin can be traded for money in the real world ("fiat") in a similar fashion to how you might exchange euros for dollars, or gold for dollars. Bitcoin is scarce and cannot be generated without significant computational work that itself is costly. Other modern schemes like "Proof of Stake" enable validators to approve blocks by prioritising which blocks were assembled by users which staked the most of their tokens. Without going into details, this achieves the same thing without vast computational effort and hence consumes far less electricity. The "Solana" blockchain, the basis of Arcrypt, uses this scheme.</p>
+  </div>
+
+  <div class="section">
+    <p class="appendix-title">Appendix II — Liquidity</p>
+    <p>Liquidity refers to how easy it is to convert an asset into cash. Cash itself can be considered the most liquid asset. Rare art or a house is very low in liquidity because its price changes rapidly (and immediately after or before sale) and there are not many buyers and sellers. Scarcity does not necessarily make an asset less liquid: gold for instance is highly liquid but is scarce. Usually, you make a loan deposit in a less liquid token, banking on its value increasing, such that you can repay the loan with liquid cash.</p>
   </div>
 
 </div>
