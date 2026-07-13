@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>b — problem solutions</title>
+  <link rel="icon" href="assets/robot-icon.png" type="image/png">
+  <link rel="shortcut icon" href="assets/robot-icon.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/robot-icon.png">
+  <style>
+    @font-face {
+      font-family: 'futura-lt-w01-book';
+      font-style: normal;
+      font-weight: 400;
+      src: url('//static.parastorage.com/fonts/v2/790166f1-b347-4f16-8a29-f0c4931a7c35/v1/futura-lt-w01-book.woff2') format('woff2');
+      font-display: swap;
+    }
+
+    :root {
+      --bg: #2F3136;
+      --panel: rgba(255, 255, 255, 0.04);
+      --panel-border: rgba(255, 255, 255, 0.26);
+      --text: #f5f5f3;
+      --muted: rgba(245, 245, 243, 0.82);
+      --shadow: rgba(0, 0, 0, 0.38);
+      --live: #6fd08c;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'futura-lt-w01-book', Futura, "Trebuchet MS", sans-serif;
+      letter-spacing: 0.01em;
+    }
+
+    body { min-height: 100vh; }
+
+    a { color: inherit; text-decoration: none; }
+
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 28px 36px 80px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 72px;
+    }
+
+    .brand { font-size: 2rem; line-height: 1; opacity: 0.95; user-select: none; }
+
+    .nav {
+      display: flex;
+      gap: 56px;
+      align-items: center;
+      justify-content: flex-end;
+      font-size: 0.92rem;
+      letter-spacing: 0.16em;
+      text-transform: lowercase;
+    }
+
+    .nav a { opacity: 0.8; transition: opacity 160ms ease, transform 160ms ease; }
+
+    .nav a:hover,
+    .nav a.active { opacity: 1; transform: translateY(-1px); }
+
+    .article-title {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 4.5vw, 3.8rem);
+      font-weight: 600;
+      line-height: 1.15;
+      letter-spacing: 0.03em;
+      text-transform: lowercase;
+    }
+
+    .article-sub {
+      margin: 0 0 40px;
+      font-size: clamp(0.95rem, 1.4vw, 1.05rem);
+      line-height: 1.6;
+      color: var(--muted);
+      max-width: 640px;
+    }
+
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 32px;
+      padding: 9px 16px;
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      font-size: 0.76rem;
+      letter-spacing: 0.1em;
+      text-transform: lowercase;
+      color: var(--muted);
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--live);
+      box-shadow: 0 0 0 0 rgba(111, 208, 140, 0.6);
+      animation: pulse 1.8s infinite;
+      flex: none;
+    }
+
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(111, 208, 140, 0.55); }
+      70%  { box-shadow: 0 0 0 7px rgba(111, 208, 140, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(111, 208, 140, 0); }
+    }
+
+    .live-badge code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      opacity: 0.9;
+    }
+
+    .live-badge a { text-decoration: underline; text-underline-offset: 3px; opacity: 0.85; }
+    .live-badge a:hover { opacity: 1; }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      padding: 20px 24px;
+      margin-bottom: 20px;
+    }
+
+    .control-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0.6;
+      white-space: nowrap;
+    }
+
+    select#ps-select {
+      appearance: none;
+      -webkit-appearance: none;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--panel-border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      letter-spacing: 0.02em;
+      padding: 10px 40px 10px 14px;
+      min-width: 300px;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' stroke='%23f5f5f3' stroke-width='1.5' fill='none' fill-rule='evenodd'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+    }
+
+    select#ps-select:focus { outline: 1px solid var(--live); }
+
+    .source-links {
+      display: flex;
+      gap: 22px;
+      flex-wrap: wrap;
+      margin-left: auto;
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+    }
+
+    .source-links a {
+      opacity: 0.75;
+      border-bottom: 1px solid var(--panel-border);
+      padding-bottom: 2px;
+      transition: opacity 160ms ease, border-color 160ms ease;
+    }
+
+    .source-links a:hover { opacity: 1; border-color: var(--live); }
+
+    .viewer-frame {
+      border: 1px solid var(--panel-border);
+      background: rgba(0,0,0,0.2);
+      min-height: 80vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .viewer-frame object,
+    .viewer-frame iframe {
+      width: 100%;
+      height: 80vh;
+      border: none;
+      display: block;
+    }
+
+    .viewer-fallback {
+      padding: 48px 40px;
+      text-align: center;
+    }
+
+    .viewer-fallback p {
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.7;
+      max-width: 480px;
+      margin: 0 auto 20px;
+    }
+
+    .viewer-fallback a {
+      display: inline-block;
+      border: 1px solid var(--panel-border);
+      padding: 10px 20px;
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
+      text-transform: lowercase;
+      margin: 6px;
+      transition: border-color 160ms ease;
+    }
+
+    .viewer-fallback a:hover { border-color: var(--live); }
+
+    .note {
+      margin-top: 18px;
+      font-size: 0.78rem;
+      line-height: 1.7;
+      color: var(--muted);
+      opacity: 0.55;
+      max-width: 640px;
+    }
+
+    .site-footer {
+      display: flex;
+      gap: 40px;
+      justify-content: center;
+      padding: 48px 36px 32px;
+      font-size: 0.82rem;
+      letter-spacing: 0.16em;
+      text-transform: lowercase;
+    }
+
+    .site-footer a { color: var(--muted); opacity: 0.6; transition: opacity 160ms ease; }
+    .site-footer a:hover { opacity: 1; }
+
+    @media (max-width: 640px) {
+      .page { padding: 18px 16px 48px; }
+      .topbar { flex-direction: column; align-items: flex-start; margin-bottom: 40px; }
+      .nav { gap: 24px; flex-wrap: wrap; font-size: 0.82rem; }
+      .controls { padding: 18px; }
+      select#ps-select { min-width: 0; width: 100%; }
+      .source-links { margin-left: 0; }
+      .viewer-frame object,
+      .viewer-frame iframe { height: 65vh; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="topbar">
+    <a href="index.html" class="brand">b</a>
+  </header>
+
+  <h1 class="article-title">problem solutions</h1>
+  <p class="article-sub">Worked solutions to problem sets, typeset in LaTeX and rendered here straight from their source repository — pick a set below.</p>
+
+  <div class="live-badge">
+    <span class="live-dot" aria-hidden="true"></span>
+    compiled live from <code>github.com/b-adamson/problem-solutions</code>
+  </div>
+
+  <div class="controls">
+    <label class="control-label" for="ps-select">problem set</label>
+    <select id="ps-select" aria-label="Select a problem set"></select>
+
+    <div class="source-links">
+      <a id="link-repo" href="#" target="_blank" rel="noopener">repo ↗</a>
+      <a id="link-folder" href="#" target="_blank" rel="noopener">folder ↗</a>
+      <a id="link-tex" href="#" target="_blank" rel="noopener">main.tex ↗</a>
+    </div>
+  </div>
+
+  <div class="viewer-frame" id="viewer">
+    <!-- populated by script -->
+  </div>
+
+  <p class="note" id="viewer-note"></p>
+
+  <hr style="border:none;border-top:1px solid var(--panel-border);margin:56px 0 0;">
+
+</div>
+
+<footer class="site-footer">
+  <a href="https://www.youtube.com/@badamson" target="_blank" rel="noopener">youtube</a>
+  <a href="https://pastebin.com/quQwaYtb" target="_blank" rel="noopener">discord</a>
+  <a href="https://github.com/b-adamson/" target="_blank" rel="noopener">github</a>
+</footer>
+
+<script>
+  // Each problem set compiles from a `<folder>/main.tex` in the repo below and is
+  // published as `<folder>.pdf` by the repo's own GitHub Actions workflow on every push —
+  // so this page always reflects the current state of the repo, not a snapshot.
+  const REPO = "b-adamson/problem-solutions";
+  const PAGES_BASE = "https://b-adamson.github.io/problem-solutions";
+
+  const PROBLEM_SETS = [
+    {
+      label: "statistical physics — problem set 1",
+      folder: "statistical_mechanics_1",
+    },
+  ];
+
+  const select = document.getElementById("ps-select");
+  const viewer = document.getElementById("viewer");
+  const note = document.getElementById("viewer-note");
+  const linkRepo = document.getElementById("link-repo");
+  const linkFolder = document.getElementById("link-folder");
+  const linkTex = document.getElementById("link-tex");
+
+  linkRepo.href = `https://github.com/${REPO}`;
+
+  PROBLEM_SETS.forEach((ps, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = ps.label;
+    select.appendChild(opt);
+  });
+
+  function render(ps) {
+    const folderUrl = `https://github.com/${REPO}/tree/main/${ps.folder}`;
+    const texUrl = `https://github.com/${REPO}/blob/main/${ps.folder}/main.tex`;
+    const pdfUrl = `${PAGES_BASE}/${ps.folder}.pdf`;
+
+    linkFolder.href = folderUrl;
+    linkTex.href = texUrl;
+
+    // Cache-bust so the embedded PDF is always the latest build, not a cached one.
+    const liveUrl = `${pdfUrl}?v=${Date.now()}`;
+
+    viewer.innerHTML = `
+      <object data="${liveUrl}" type="application/pdf">
+        <div class="viewer-fallback">
+          <p>The compiled PDF isn't reachable at <code>${pdfUrl}</code> yet — GitHub Pages may still need to be enabled for this repo (Settings → Pages → Source: GitHub Actions), or the build workflow hasn't run yet. Once it has, this panel will show the live PDF automatically.</p>
+          <a href="${texUrl}" target="_blank" rel="noopener">view main.tex on github ↗</a>
+          <a href="${folderUrl}" target="_blank" rel="noopener">view folder on github ↗</a>
+        </div>
+      </object>
+    `;
+
+    note.textContent = `Source: ${ps.folder}/main.tex — rebuilt and republished automatically on every push to main.`;
+  }
+
+  select.addEventListener("change", () => render(PROBLEM_SETS[select.value]));
+  render(PROBLEM_SETS[0]);
+</script>
+
+</body>
+</html>

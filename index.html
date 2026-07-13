@@ -171,7 +171,6 @@
     .card-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.18) 60%, transparent 100%);
     }
 
     .card-body {
@@ -201,8 +200,22 @@
       font-size: 0.72rem;
       letter-spacing: 0.18em;
       text-transform: uppercase;
-      color: var(--muted);
-      opacity: 0.7;
+      color: var(--text);
+      opacity: 1;
+    }
+
+    .card-thin {
+      min-height: 160px;
+      background: linear-gradient(135deg, #f5f5f3 0%, #8b8d8f 100%);
+    }
+
+    .card-thin .card-body {
+      min-height: 160px;
+    }
+
+    .card-thin .card-title,
+    .card-thin .card-year {
+      color: #1c1d20;
     }
 
     .site-disclaimer {
@@ -284,12 +297,6 @@
     <header class="topbar">
       <div class="brand">b</div>
       <p style="font-size:0.72rem;letter-spacing:0.14em;text-transform:lowercase;color:var(--muted);opacity:0.45;margin:0;">site in progress</p>
-      <nav class="nav" aria-label="Primary">
-        <a href="index.html">home</a>
-        <a href="minecraft.html">minecraft</a>
-        <a href="festi.html">festi</a>
-        <a href="philosophy.html">philosophy</a>
-      </nav>
     </header>
 
     <section class="hero">
@@ -333,7 +340,7 @@
       </a>
 
       <a class="card" href="blockchain.html">
-        <img class="card-img" src="assets/arcrypt.png" alt="Arcrypt project preview" style="object-position: 30% center;" />
+        <img class="card-img" src="assets/arcrypt.png" alt="Arcrypt project preview" style="object-position: 45% center;" />
         <div class="card-overlay"></div>
         <div class="card-body">
           <h2 class="card-title">Arcrypt</h2>
@@ -358,6 +365,13 @@
           <p class="card-year">2026 — tba</p>
         </div>
       </div>
+
+      <a class="card card-thin" href="problem-solutions.html">
+        <div class="card-body">
+          <h2 class="card-title">problem solutions</h2>
+          <p class="card-year">2026</p>
+        </div>
+      </a>
     </section>
   </main>
   <footer class="site-footer">
