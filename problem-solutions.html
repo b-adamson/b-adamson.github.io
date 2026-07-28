@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>b — problem solutions</title>
+  <title>b</title>
   <link rel="icon" href="assets/robot-icon.png" type="image/png">
   <link rel="shortcut icon" href="assets/robot-icon.png" type="image/png">
   <link rel="apple-touch-icon" href="assets/robot-icon.png">
@@ -88,44 +88,6 @@
       color: var(--muted);
       max-width: 640px;
     }
-
-    .live-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 9px;
-      margin-bottom: 32px;
-      padding: 9px 16px;
-      border: 1px solid var(--panel-border);
-      background: var(--panel);
-      font-size: 0.76rem;
-      letter-spacing: 0.1em;
-      text-transform: lowercase;
-      color: var(--muted);
-    }
-
-    .live-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--live);
-      box-shadow: 0 0 0 0 rgba(111, 208, 140, 0.6);
-      animation: pulse 1.8s infinite;
-      flex: none;
-    }
-
-    @keyframes pulse {
-      0%   { box-shadow: 0 0 0 0 rgba(111, 208, 140, 0.55); }
-      70%  { box-shadow: 0 0 0 7px rgba(111, 208, 140, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(111, 208, 140, 0); }
-    }
-
-    .live-badge code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      opacity: 0.9;
-    }
-
-    .live-badge a { text-decoration: underline; text-underline-offset: 3px; opacity: 0.85; }
-    .live-badge a:hover { opacity: 1; }
 
     .controls {
       display: flex;
@@ -271,11 +233,6 @@
   <h1 class="article-title">problem solutions</h1>
   <p class="article-sub">Worked solutions to problem sets, typeset in LaTeX and rendered here straight from their source repository — pick a set below.</p>
 
-  <div class="live-badge">
-    <span class="live-dot" aria-hidden="true"></span>
-    compiled live from <code>github.com/b-adamson/problem-solutions</code>
-  </div>
-
   <div class="controls">
     <label class="control-label" for="ps-select">problem set</label>
     <select id="ps-select" aria-label="Select a problem set"></select>
@@ -290,8 +247,6 @@
   <div class="viewer-frame" id="viewer">
     <!-- populated by script -->
   </div>
-
-  <p class="note" id="viewer-note"></p>
 
   <hr style="border:none;border-top:1px solid var(--panel-border);margin:56px 0 0;">
 
@@ -319,7 +274,6 @@
 
   const select = document.getElementById("ps-select");
   const viewer = document.getElementById("viewer");
-  const note = document.getElementById("viewer-note");
   const linkRepo = document.getElementById("link-repo");
   const linkFolder = document.getElementById("link-folder");
   const linkTex = document.getElementById("link-tex");
@@ -354,7 +308,6 @@
       </object>
     `;
 
-    note.textContent = `Source: ${ps.folder}/main.tex — rebuilt and republished automatically on every push to main.`;
   }
 
   select.addEventListener("change", () => render(PROBLEM_SETS[select.value]));
