@@ -322,11 +322,13 @@
 
   <div class="section">
     <p>Now we have the position of each vertex, we need to create the faces. Small area elements are created across the surface of each triangle which are used to create the final pixels on the screen. Each fragments properties are determined by linearly interpolating each property, like position, we defined in each vertex (some can hold a fixed &ldquo;flat&rdquo; value, and overrides the interpolated value, such as a textureID). This means, that if we defined an &ldquo;outColour&rdquo; variable in the vertex shader, and passed it to the fragment shader, we would get something like we see on the right. Each fragment then undergoes a number of tests automatically by vulkan. Most of this can be specified from default, like automatically culling back faces based on the surface normal of each triangle, rather than creating each fragment and then discarding each based on the interpolated z coordinate. The fragments are combined together to create the pixels on the screen.</p>
-    <div class="image-row" style="margin-top:24px;">
-      <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_9025550a1db047c1bb124460c60c5fd8~mv2.png" alt="Fragment rasterisation diagram" loading="lazy">
-      <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_ea262ee16bbd4c9c9a12b7b440fa8df9~mv2.png" alt="Interpolated colour triangle" loading="lazy">
-    </div>
+    <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_9025550a1db047c1bb124460c60c5fd8~mv2.png" alt="Fragment rasterisation diagram" loading="lazy" style="margin-top:24px;">
     <p class="caption">Interpolation connects colours from each vertex</p>
+  </div>
+
+  <div class="section">
+    <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_ea262ee16bbd4c9c9a12b7b440fa8df9~mv2.png" alt="Interpolated colour triangle" loading="lazy">
+    <p class="caption">A normal map that differs from the actual image appears to be engraved</p>
   </div>
 
   <h2 class="chapter-title">descriptors, materials and lighting</h2>
@@ -346,7 +348,6 @@
       <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_fa2669fef10848eebc8b3750b23cb967~mv2.png" alt="Normal map texture" loading="lazy">
       <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_de7d38f596ef4e70aa45ecef56fbc79b~mv2.png" alt="Face keyframe struct" loading="lazy">
     </div>
-    <p class="caption">A normal map that differs from the actual image appears to be engraved</p>
   </div>
 
   <div class="section">

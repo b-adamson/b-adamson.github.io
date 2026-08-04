@@ -47,6 +47,28 @@
 
     body {
       min-height: 100vh;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 70vh;
+      background:
+        linear-gradient(to bottom, rgba(47, 49, 54, 0) 0%, rgba(47, 49, 54, 0) 40%, #2F3136 100%),
+        linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)),
+        url('assets/arcryptbackdrop.jpg') center top / cover no-repeat;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .page,
+    .site-footer {
+      position: relative;
+      z-index: 1;
     }
 
     a {
@@ -230,7 +252,7 @@
 
   <!-- paragraph 1 -->
   <div class="section">
-    <p>In 2026 I built Arcrypt, the first truly sealed auction platform. By "sealed auction" we mean an auction where bids are not visible to competing participants (even if bidder identities are visible). By "truly" we mean that no third party is entrusted with sealing bids. This is achieved through the combination of a public blockchain network and a privacy protocol that supports network controlled encrypted balances. This article focuses on how it works, why it might be useful, the economic value of privacy in finance, and the steps needed to decentralize institutional finance.</p>
+    <p>In 2026 I built Arcrypt, the first truly sealed auction platform. This is the result of a number of other <a href="https://github.com/b-adamson/oscillocurve" target="_blank" rel="noopener" style="text-decoration:underline;">smaller projects</a> on the Solana blockchain I have been developing since mid 2025. By "sealed auction" we mean an auction where bids are not visible to competing participants (even if bidder identities are visible). By "truly" we mean that no third party is entrusted with sealing bids. This is achieved through the combination of a public blockchain network and a privacy protocol that supports network controlled encrypted balances. This article focuses on how it works, why it might be useful, the economic value of privacy in finance, and the steps needed to decentralize institutional finance.</p>
   </div>
 
   <!-- paragraph 2 -->
