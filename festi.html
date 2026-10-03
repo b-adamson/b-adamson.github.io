@@ -542,23 +542,23 @@
   <p class="article-date">2026</p>
 
   <div class="section">
-    <p><a href="https://github.com/b-adamson/festi/tree/main/fpga/point_sampler" target="_blank" rel="noopener" style="text-decoration: underline;">point_sampler</a> is a small custom circuit — written in SystemVerilog, a hardware description language, rather than a program in the usual sense — that offloads one calculation from festi's C++ engine into dedicated hardware. It runs on a Kria K26 (a Zynq UltraScale+ chip: Arm CPU cores and reprogrammable circuitry on one piece of silicon), talking to the C++ side over AXI4-Lite, a standard protocol for a CPU to read and write registers on a peripheral. The calculation itself is the last line of <em>addRndInstance()</em> in <em>src/model.cpp</em>: given a triangle and a randomly sampled point on it (as fractions u, v), work out the actual 3D position that point corresponds to — the same interpolation a GPU does per-pixel when shading triangles, so it doubles as a first step toward a rasterizer built from scratch.</p>
+    <p><a href="https://github.com/b-adamson/festi/tree/main/fpga/point_sampler" target="_blank" rel="noopener" style="text-decoration: underline;">point_sampler</a> is a small custom circuit, written in SystemVerilog, a hardware description language, rather than a program in the usual sense, that offloads one calculation from festi's C++ engine into dedicated hardware. It runs on a Kria K26 (a Zynq UltraScale+ chip: Arm CPU cores and reprogrammable circuitry on one piece of silicon), talking to the C++ side over AXI4-Lite, a standard protocol for a CPU to read and write registers on a peripheral. The calculation itself is the last line of <em>addRndInstance()</em> in <em>src/model.cpp</em>: given a triangle and a randomly sampled point on it (as fractions u, v), work out the actual 3D position that point corresponds to. That's the same interpolation a GPU does per-pixel when shading triangles, so it doubles as a first step toward a rasterizer built from scratch.</p>
   </div>
 
   <h2 class="chapter-title">the pipeline</h2>
 
   <div class="section">
-    <p>The core computes <code>out = w·v0 + u·v1 + v·v2</code>, <code>w = 1 - u - v</code>, in Q16.16 signed fixed-point (32-bit words, 16 fractional bits — <code>10.0</code> is <code>0x000A0000</code>, <code>-0.3</code> is <code>0xFFFFB333</code> in two's complement). It's a 3-stage pipeline, one (v0, v1, v2, u, v) tuple accepted per cycle, the matching result appearing 3 cycles later in issue order, no stalling or back-pressure anywhere in it:</p>
+    <p>The core computes <code>out = w·v0 + u·v1 + v·v2</code>, <code>w = 1 - u - v</code>, in Q16.16 signed fixed-point (32-bit words, 16 fractional bits: <code>10.0</code> is <code>0x000A0000</code>, <code>-0.3</code> is <code>0xFFFFB333</code> in two's complement). It's a 3-stage pipeline, one (v0, v1, v2, u, v) tuple accepted per cycle, the matching result appearing 3 cycles later in issue order, with no stalling or back-pressure anywhere in it:</p>
     <pre class="code-block"><code><span class="tok-com">// stage 0: register inputs, form w = 1 - u - v</span>
 <span class="tok-com">// stage 1: three parallel fixed-point multiplies -- w*v0, u*v1, v*v2</span>
 <span class="tok-com">// stage 2: sum the three products -&gt; out</span></code></pre>
-    <p class="caption">rtl/barycentric.sv — every stage is a plain always_ff block; a new sample can enter every clock</p>
+    <p class="caption">rtl/barycentric.sv: every stage is a plain always_ff block; a new sample can enter every clock</p>
   </div>
 
   <h2 class="chapter-title">the interface</h2>
 
   <div class="section">
-    <p>A toy module that only talks to a testbench isn't the interesting part here — making it talk to real software is. <em>barycentric_axi.sv</em> wraps the core in an AXI4-Lite slave so it sits in the Arm cores' own memory map as ordinary MMIO: 16 registers, 4-byte stride, all Q16.16 except CTRL/STATUS.</p>
+    <p>A toy module that only talks to a testbench isn't the interesting part here. Making it talk to real software is. <em>barycentric_axi.sv</em> wraps the core in an AXI4-Lite slave so it sits in the Arm cores' own memory map as ordinary MMIO: 16 registers, 4-byte stride, all Q16.16 except CTRL/STATUS.</p>
     <table class="reg-table">
       <thead>
         <tr><th>Offset</th><th>Register</th><th>R/W</th><th>Meaning</th></tr>
@@ -573,19 +573,19 @@
         <tr><td>0x34 / 0x38 / 0x3C</td><td>OUTX / OUTY / OUTZ</td><td>RO</td><td>Result point</td></tr>
       </tbody>
     </table>
-    <p class="caption">The host always initiates: write the 11 inputs, strobe CTRL, poll STATUS, read the outputs. There's no interrupt — STATUS is cheap enough to poll given the core finishes in 3 cycles.</p>
+    <p class="caption">The host always initiates: write the 11 inputs, strobe CTRL, poll STATUS, read the outputs. There's no interrupt, since STATUS is cheap enough to poll given the core finishes in 3 cycles.</p>
   </div>
 
   <div class="section">
-    <p>The accelerator is wired directly to the chip's Arm cores and can be loaded onto the board live, while Linux keeps running, with no reboot — a small device-tree file tells Linux where it lives and that it should be treated as a plain, raw register block rather than anything more involved.</p>
-    <p>A small Python program runs on the board itself, talks to those registers directly, and listens on the network for requests: one line of triangle data in, one line of result out. A second small program on the dev machine forwards festi's requests to it over ethernet — the same path the engine already calls to get a result, so swapping the CPU formula for real hardware needed no changes to festi's own code.</p>
+    <p>The accelerator is wired directly to the chip's Arm cores and can be loaded onto the board live, while Linux keeps running, with no reboot. A small device-tree file tells Linux where it lives and that it should be treated as a plain, raw register block rather than anything more involved.</p>
+    <p>A small Python program runs on the board itself, talks to those registers directly, and listens on the network for requests: one line of triangle data in, one line of result out. A second small program on the dev machine forwards festi's requests to it over ethernet, the same path the engine already calls to get a result, so swapping the CPU formula for real hardware needed no changes to festi's own code.</p>
   </div>
 
   <h2 class="chapter-title">verification</h2>
 
   <div class="section">
-    <p>Before trusting this on real hardware, it's checked entirely in simulation first. A plain Python script computes the "obvious" correct answer using ordinary decimal math; a simulated version of the actual circuit computes its own answer the real way, bit by bit; a third script compares the two. Current run: 200 test cases, worst-case difference 0.011905, comfortably inside the 0.05 margin allowed for the rounding error fixed-point math is expected to have — tight enough, though, that an actual mistake in the circuit would still show up as a clear failure rather than hiding in that margin.</p>
-    <p>Testing on the real chip happens in two stages, cheap first. The core is first tried out completely standalone, talked to only over a basic debug cable (JTAG) plugged straight into a laptop — nothing else on the board involved yet. Only once that works does it get connected to the real interface Linux and the CPU actually use. The debug-cable version only works with a laptop physically attached, and has to be reloaded every time the board loses power — fine for a quick check, useless day to day, which is exactly why the real interface exists for actual use.</p>
+    <p>Before trusting this on real hardware, it's checked entirely in simulation first. A plain Python script computes the "obvious" correct answer using ordinary decimal math; a simulated version of the actual circuit computes its own answer the real way, bit by bit; a third script compares the two. Current run: 200 test cases, worst-case difference 0.011905, comfortably inside the 0.05 margin allowed for the rounding error fixed-point math is expected to have. It's tight enough, though, that an actual mistake in the circuit would still show up as a clear failure rather than hiding in that margin.</p>
+    <p>Testing on the real chip happens in two stages, cheap first. The core is first tried out completely standalone, talked to only over a basic debug cable (JTAG) plugged straight into a laptop, nothing else on the board involved yet. Only once that works does it get connected to the real interface Linux and the CPU actually use. The debug-cable version only works with a laptop physically attached, and has to be reloaded every time the board loses power. Fine for a quick check, useless day to day, which is exactly why the real interface exists for actual use.</p>
   </div>
 
   <h2 class="chapter-title">numbers</h2>
