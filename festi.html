@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>b</title>
+  <title>B. Adamson</title>
   <link rel="icon" href="assets/robot-icon.png" type="image/png">
   <link rel="shortcut icon" href="assets/robot-icon.png" type="image/png">
   <link rel="apple-touch-icon" href="assets/robot-icon.png">
@@ -188,6 +188,66 @@
       text-align: center;
     }
 
+    .section p code {
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.92em;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 1px 5px;
+    }
+
+    pre.code-block {
+      margin: 0 !important;
+      padding: 20px 22px;
+      border: 1px solid var(--panel-border);
+      overflow-x: auto;
+      background: rgba(0, 0, 0, 0.28) !important;
+      border-radius: 0 !important;
+    }
+
+    .code-block code {
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.88rem;
+      line-height: 1.65;
+      white-space: pre;
+      color: #f8f8f2;
+    }
+
+    .tok-mod  { color: #66d9ef; }
+    .tok-fn   { color: #a6e22e; }
+    .tok-attr { color: #fd971f; }
+    .tok-num  { color: #ae81ff; }
+    .tok-kw   { color: #f92672; }
+    .tok-com  { color: rgba(248,248,242,0.45); }
+
+    .reg-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .reg-table th,
+    .reg-table td {
+      text-align: left;
+      padding: 10px 14px;
+      border: 1px solid var(--panel-border);
+      color: var(--muted);
+    }
+
+    .reg-table th {
+      color: var(--text);
+      opacity: 0.85;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+    }
+
+    .reg-table td:first-child,
+    .reg-table td:nth-child(2) {
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      white-space: nowrap;
+    }
+
     .site-footer {
       display: flex;
       gap: 40px;
@@ -223,6 +283,12 @@
         padding: 22px 20px;
       }
 
+      .reg-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
       .pull-quote {
         padding: 20px 22px;
       }
@@ -235,6 +301,7 @@
 
   <header class="topbar">
     <a href="index.html" class="brand">b</a>
+    <a href="#rtl" style="text-decoration: underline; opacity: 0.75; font-size: 0.9rem;">jump to fpga / rtl accelerator &darr;</a>
   </header>
 
   <h1 class="article-title">vulkan graphics engine in c++</h1>
@@ -471,11 +538,75 @@
     <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_24ba03e3dd5b42eea4b557117d07365f~mv2.png" alt="World properties script" loading="lazy" style="margin-top:16px;">
   </div>
 
+  <h2 class="chapter-title" id="rtl">fpga / rtl accelerator</h2>
+  <p class="article-date">2026</p>
+
+  <div class="section">
+    <p><a href="https://github.com/b-adamson/festi/tree/main/fpga/point_sampler" target="_blank" rel="noopener" style="text-decoration: underline;">point_sampler</a> is a small custom circuit — written in SystemVerilog, a hardware description language, rather than a program in the usual sense — that offloads one calculation from festi's C++ engine into dedicated hardware. It runs on a Kria K26 (a Zynq UltraScale+ chip: Arm CPU cores and reprogrammable circuitry on one piece of silicon), talking to the C++ side over AXI4-Lite, a standard protocol for a CPU to read and write registers on a peripheral. The calculation itself is the last line of <em>addRndInstance()</em> in <em>src/model.cpp</em>: given a triangle and a randomly sampled point on it (as fractions u, v), work out the actual 3D position that point corresponds to — the same interpolation a GPU does per-pixel when shading triangles, so it doubles as a first step toward a rasterizer built from scratch.</p>
+  </div>
+
+  <h2 class="chapter-title">the pipeline</h2>
+
+  <div class="section">
+    <p>The core computes <code>out = w·v0 + u·v1 + v·v2</code>, <code>w = 1 - u - v</code>, in Q16.16 signed fixed-point (32-bit words, 16 fractional bits — <code>10.0</code> is <code>0x000A0000</code>, <code>-0.3</code> is <code>0xFFFFB333</code> in two's complement). It's a 3-stage pipeline, one (v0, v1, v2, u, v) tuple accepted per cycle, the matching result appearing 3 cycles later in issue order, no stalling or back-pressure anywhere in it:</p>
+    <pre class="code-block"><code><span class="tok-com">// stage 0: register inputs, form w = 1 - u - v</span>
+<span class="tok-com">// stage 1: three parallel fixed-point multiplies -- w*v0, u*v1, v*v2</span>
+<span class="tok-com">// stage 2: sum the three products -&gt; out</span></code></pre>
+    <p class="caption">rtl/barycentric.sv — every stage is a plain always_ff block; a new sample can enter every clock</p>
+  </div>
+
+  <h2 class="chapter-title">the interface</h2>
+
+  <div class="section">
+    <p>A toy module that only talks to a testbench isn't the interesting part here — making it talk to real software is. <em>barycentric_axi.sv</em> wraps the core in an AXI4-Lite slave so it sits in the Arm cores' own memory map as ordinary MMIO: 16 registers, 4-byte stride, all Q16.16 except CTRL/STATUS.</p>
+    <table class="reg-table">
+      <thead>
+        <tr><th>Offset</th><th>Register</th><th>R/W</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>0x00 / 0x04 / 0x08</td><td>V0X / V0Y / V0Z</td><td>RW</td><td>Triangle vertex 0</td></tr>
+        <tr><td>0x0C / 0x10 / 0x14</td><td>V1X / V1Y / V1Z</td><td>RW</td><td>Triangle vertex 1</td></tr>
+        <tr><td>0x18 / 0x1C / 0x20</td><td>V2X / V2Y / V2Z</td><td>RW</td><td>Triangle vertex 2</td></tr>
+        <tr><td>0x24 / 0x28</td><td>U / V</td><td>RW</td><td>Sample coordinates</td></tr>
+        <tr><td>0x2C</td><td>CTRL</td><td>WO</td><td>bit 0 = start (self-clearing)</td></tr>
+        <tr><td>0x30</td><td>STATUS</td><td>RO</td><td>bit 0 = done</td></tr>
+        <tr><td>0x34 / 0x38 / 0x3C</td><td>OUTX / OUTY / OUTZ</td><td>RO</td><td>Result point</td></tr>
+      </tbody>
+    </table>
+    <p class="caption">The host always initiates: write the 11 inputs, strobe CTRL, poll STATUS, read the outputs. There's no interrupt — STATUS is cheap enough to poll given the core finishes in 3 cycles.</p>
+  </div>
+
+  <div class="section">
+    <p>The accelerator is wired directly to the chip's Arm cores and can be loaded onto the board live, while Linux keeps running, with no reboot — a small device-tree file tells Linux where it lives and that it should be treated as a plain, raw register block rather than anything more involved.</p>
+    <p>A small Python program runs on the board itself, talks to those registers directly, and listens on the network for requests: one line of triangle data in, one line of result out. A second small program on the dev machine forwards festi's requests to it over ethernet — the same path the engine already calls to get a result, so swapping the CPU formula for real hardware needed no changes to festi's own code.</p>
+  </div>
+
+  <h2 class="chapter-title">verification</h2>
+
+  <div class="section">
+    <p>Before trusting this on real hardware, it's checked entirely in simulation first. A plain Python script computes the "obvious" correct answer using ordinary decimal math; a simulated version of the actual circuit computes its own answer the real way, bit by bit; a third script compares the two. Current run: 200 test cases, worst-case difference 0.011905, comfortably inside the 0.05 margin allowed for the rounding error fixed-point math is expected to have — tight enough, though, that an actual mistake in the circuit would still show up as a clear failure rather than hiding in that margin.</p>
+    <p>Testing on the real chip happens in two stages, cheap first. The core is first tried out completely standalone, talked to only over a basic debug cable (JTAG) plugged straight into a laptop — nothing else on the board involved yet. Only once that works does it get connected to the real interface Linux and the CPU actually use. The debug-cable version only works with a laptop physically attached, and has to be reloaded every time the board loses power — fine for a quick check, useless day to day, which is exactly why the real interface exists for actual use.</p>
+  </div>
+
+  <h2 class="chapter-title">numbers</h2>
+
+  <div class="section">
+    <p>From the routed design (Vivado 2026.1, xck26-sfvc784-2LV): timing closes on the PS's default 97MHz PL clock (10.312ns period) with a worst setup slack of +4.316ns, so there's clearly room to push the clock faster, I just haven't tried yet. Worst hold slack is +0.011ns though, close enough to zero that I wouldn't trust it to survive a different placement seed without rechecking first.</p>
+    <p>Utilization is tiny: 597 LUTs (0.51%), 1267 registers (0.54%), 36 DSP48E2 slices (2.88%), 0 block RAM. Most of that is the three parallel fixed-point multiplies plus the pipeline registers. There was never any need for memory here, since nothing beyond a single in-flight sample gets stored.</p>
+  </div>
+
+  <h2 class="chapter-title">what didn't work</h2>
+
+  <div class="section">
+    <p>Vivado's board-preset automation tried to bring up a second AXI master (<em>M_AXI_HPM0_LPD</em>) alongside the one this design actually needs, and in this setup that second master comes up with no clock wired to it at all. Vivado doesn't flag that as an error at block-design time either, so it's the kind of thing you'd only find out about once a bitstream failed on real hardware with no obvious cause. I turned it off by hand instead of trusting the automation to get it right.</p>
+    <p>Vivado's <em>dbg_hub</em> generation for the JTAG/VIO path just fails, silently, once the project path gets past roughly 146 characters. This project's folder, nested a few levels under the blog repo, was already past that from day one. Rather than tear up the folder structure to fix it, I mapped a drive letter straight onto the project root (<code>subst V: "...\point_sampler"</code>) and built from <code>V:\</code> instead.</p>
+    <p>There's also a serial/UART fallback (the board's own JTAG/debug console, 115200 baud) for when ethernet isn't available, but it's bad for this: single-digit milliseconds per instance over ethernet against tens of milliseconds over serial, something like a 10-20x gap, since it's a debug-console rate and not a real data link. It stays in as a fallback.</p>
+  </div>
+
 </div>
 
 <footer class="site-footer">
   <a href="https://www.youtube.com/@badamson" target="_blank" rel="noopener">youtube</a>
-  <a href="https://pastebin.com/quQwaYtb" target="_blank" rel="noopener">discord</a>
   <a href="https://github.com/b-adamson/" target="_blank" rel="noopener">github</a>
 </footer>
 
