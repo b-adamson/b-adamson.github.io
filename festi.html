@@ -301,16 +301,15 @@
 
   <header class="topbar">
     <a href="index.html" class="brand">b</a>
-    <a href="#rtl" style="text-decoration: underline; opacity: 0.75; font-size: 0.9rem;">jump to fpga / rtl accelerator &darr;</a>
   </header>
 
   <h1 class="article-title">vulkan graphics engine in c++</h1>
-  <p class="article-date">1st December 2024</p>
+  <p class="article-date">1st December 2024, updated August 2026</p>
 
   <div class="section">
     <p><a href="https://github.com/b-adamson/festi" target="_blank" rel="noopener" style="text-decoration: underline;">Festi</a> is a Vulkan based 3D rendering engine written in C++. It is designed primarily for making rapidly changing stop-motion style graphics.</p>
-    <p>The engine uses an embedded python interpreter to read a user-created python script, along with the &ldquo;festi&rdquo; python module, to create models and specify keyframes in a scene. It then uses this information to render the scene in a window. The user can fly around the scene, or keyframe a camera to fly around on a specified path. The user can stop, slow down, or reverse the scene, as well as being able to click through frame by frame.</p>
-    <p>This article outlines the process of creating the engine from scratch, and where I want to improve it further.</p>
+    <p>The engine uses an embedded python interpreter to read a user-created python script, along with the <code>festi</code> python module, to create models and specify keyframes in a scene. It then uses this information to render the scene in a window. The user can fly around the scene, or keyframe a camera to fly around on a specified path. The user can stop, slow down, or reverse the scene, as well as being able to click through frame by frame.</p>
+    <p>This article outlines the process of creating the engine from scratch, and where I want to improve it further. The last section covers a SystemVerilog accelerator I built for one piece of this engine's math and got running on real hardware: <a href="#rtl" style="text-decoration: underline;">skip straight to it here</a>.</p>
   </div>
 
   <div class="section">
@@ -364,7 +363,7 @@
   <div class="section">
     <p>Perspective projection makes distant objects appear further away. This makes the scene appear more like how the human eye at close distance would perceive it.</p>
     <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_f9381b1f0364484bb3a974710269f7aa~mv2.png" alt="Perspective projection diagram" loading="lazy" style="margin-top:24px;">
-    <p class="caption">Credit: Brenden Galea</p>
+    <p class="caption">Credit: Brendan Galea</p>
   </div>
 
   <div class="section">
@@ -372,7 +371,7 @@
       <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_3894b6fb65194bbfae365a9343dc5dbd~mv2.png" alt="Perspective divide diagram" loading="lazy">
       <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_89ece72fbd9a4a49892065de15516cac~mv2.png" alt="Perspective matrix derivation" loading="lazy">
     </div>
-    <p class="caption">Credit: Brenden Galea</p>
+    <p class="caption">Credit: Brendan Galea</p>
   </div>
 
   <div class="section">
@@ -382,7 +381,7 @@
   <div class="section">
     <p>I've implemented this in the code using a function that is called every frame based on the keyframed values. worldObj is an object that holds details about the camera and ambient/directional lighting.</p>
     <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_aa0de6d023824e52aa74ae6dcbd0a846~mv2.png" alt="Camera and lighting update code" loading="lazy" style="max-width:100%;margin-top:24px;">
-    <p class="caption">Credit: Brenden Galea</p>
+    <p class="caption">Credit: Brendan Galea</p>
   </div>
 
   <h2 class="chapter-title">fragment interpolation</h2>
@@ -430,7 +429,7 @@
 
   <div class="section">
     <p>We also have point light sources. These are a kind of model that uniformly emit light in all directions. We accumulate the positions and colours/intensities of each point light that exists every frame. This information is then stored on a buffer that we can access in the shader as before. Then, we iterate through each point light and add on its contribution. Here, we use intensity = 1 / distance^2 to calculate the intensity.</p>
-    <p>We also employ blinn-phong specular lighting. This kind of lighting also depends on the viewer position, and is calculated using the &ldquo;half angle&rdquo; between the direction to the point light and the camera position. We then dot product this with the fragment surface normal, and raise it to an exponent, which changes the apparant &ldquo;shininess&rdquo;. Shininess is a property we specify in the MTL file for each material. We also have the option to use a specular map as before to make different parts of the surface look shinier.</p>
+    <p>We also employ blinn-phong specular lighting. This kind of lighting also depends on the viewer position, and is calculated using the &ldquo;half angle&rdquo; between the direction to the point light and the camera position. We then dot product this with the fragment surface normal, and raise it to an exponent, which changes the apparent &ldquo;shininess&rdquo;. Shininess is a property we specify in the MTL file for each material. We also have the option to use a specular map as before to make different parts of the surface look shinier.</p>
   </div>
 
   <div class="section">
@@ -489,14 +488,6 @@
     <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_ab9c8d1a7f6441eeb26ca217a12c5d56~mv2.png" alt="Building instance result" loading="lazy" style="margin-top:24px;">
   </div>
 
-  <h2 class="chapter-title">shadows</h2>
-
-  <div class="section">
-    <p>We can implement shadows by re-rendering the entire scene again but this time via an orthographic projection. We configure a new pipeline such that it only has a depth attachment. We then render this to an internal frame buffer that isn't displayed. We use an empty fragment shader, since all we need to do is interpolate the depth value which is done automatically, and output that. The position of the view is placed in the direction of the mainLight. Then, we sample this framebuffer in the main shader and remove all light, except ambient light, from the fragment. This process is called &ldquo;shadow pass&rdquo;, and requires us to setup a new vulkan render pass, imageview, imagememory etc, which we will discuss in more detail later. An orthographic projection is used as this uses parallel lines to define the view volume, much like the light source is assumed to have parallel rays.</p>
-    <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_00de98b9819f4c8e9c818efabbbf9504~mv2.png" alt="Shadow pass diagram" loading="lazy" style="margin-top:24px;">
-    <p class="caption">This connects numpy 4x4 matrix and glm::mat4</p>
-  </div>
-
   <div class="section">
     <p>For any random instance keyframe, we do as follows. We first iterate over each face, and extract the relevant vertices. We make sure to transform the vertices by the parents world model matrix. We then take the childs local transform and apply the parents model matrix. This means any local rotations or scales on the child will stay, and also will rotate on the childs local xyz axis, even when it exists on the parent. We then randomly generate a set of uv coordinates. We also have a property called solidity that skews the randomness such that objects appear further on the edges, and a property called randomness that changes the rounding of uv (such that they appear in a more grid like formation for lower randomness). We then similarly perform a linear interpolation calculation on all three vertices with u and v, and add it to the transform. As seen above and to the side, we can successfully instance smaller objects on larger objects. There is also a method called &ldquo;makeStandAlone()&rdquo; that can reset the pointer to the parent object back to nullptr, which stops instancing and puts the object back in its local space.</p>
     <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_c94689f784044f9db253f75e1fc3e06b~mv2.png" alt="Random instance keyframe code" loading="lazy" style="max-width:100%;margin-top:24px;">
@@ -504,13 +495,20 @@
   </div>
 
   <div class="section">
-    <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_347d88498260437fba4b3f8fed2c11f1~mv2.png" alt="Empty depth-only fragment shader" loading="lazy" style="max-width:100%;">
-    <p class="caption">Empty fragment shader, since all we care about is depth</p>
+    <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_a237959878a14a3f8d21a6603fd64ed8~mv2.gif" alt="Single cube building instance structure" loading="lazy">
+    <p class="caption">This scene has only one model and a single material of a single 1x1x1 cube, and we transform each instance with building instances to create this structure.</p>
+  </div>
+
+  <h2 class="chapter-title">shadows</h2>
+
+  <div class="section">
+    <p>We can implement shadows by re-rendering the entire scene again but this time via an orthographic projection. We configure a new pipeline such that it only has a depth attachment. We then render this to an internal frame buffer that isn't displayed. We use an empty fragment shader, since all we need to do is interpolate the depth value which is done automatically, and output that. The position of the view is placed in the direction of the mainLight. Then, we sample this framebuffer in the main shader and remove all light, except ambient light, from the fragment. This process is called &ldquo;shadow pass&rdquo;, and requires us to setup a new vulkan render pass, imageview, imagememory etc, which we will discuss in more detail later. An orthographic projection is used as this uses parallel lines to define the view volume, much like the light source is assumed to have parallel rays.</p>
+    <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_00de98b9819f4c8e9c818efabbbf9504~mv2.png" alt="Shadow pass diagram" loading="lazy" style="margin-top:24px;">
   </div>
 
   <div class="section">
-    <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_a237959878a14a3f8d21a6603fd64ed8~mv2.gif" alt="Single cube building instance structure" loading="lazy">
-    <p class="caption">This scene has only one model and a single material of a single 1x1x1 cube, and we transform each instance with building instances to create this structure.</p>
+    <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_347d88498260437fba4b3f8fed2c11f1~mv2.png" alt="Empty depth-only fragment shader" loading="lazy" style="max-width:100%;">
+    <p class="caption">Empty fragment shader, since all we care about is depth</p>
   </div>
 
   <div class="section">
@@ -520,7 +518,7 @@
   <h2 class="chapter-title">python bindings</h2>
 
   <div class="section">
-    <p>So far, all the actual app implementation has been written in C++. We import our models and set our keyframes using a function setScene(), in C++. We can use pybind11 to instead do this in python, for better usability. We just need to bind all the relevant structures and functions, and then setup an embedded interpreter in setScene(), and run a script. The pybind compiles a custom module based on our bindings, which we can import. Pybind seemlessly handles use of pointers (which is good because we reference models with shared pointers throughout).</p>
+    <p>So far, all the actual app implementation has been written in C++. We import our models and set our keyframes using a function setScene(), in C++. We can use pybind11 to instead do this in python, for better usability. We just need to bind all the relevant structures and functions, and then setup an embedded interpreter in setScene(), and run a script. The pybind compiles a custom module based on our bindings, which we can import. Pybind seamlessly handles use of pointers (which is good because we reference models with shared pointers throughout).</p>
   </div>
 
   <div class="section">
@@ -533,16 +531,16 @@
   </div>
 
   <div class="section">
-    <p>The python side with custom module. This is similar to bpy or bmesh modules in blender. This code mirrors equivelant C++ code. This doesn't slow down our code, because the python just configures the keyframes, and then the engine actually runs on C++ afterwards.</p>
+    <p>The python side with custom module. This is similar to bpy or bmesh modules in blender. This code mirrors equivalent C++ code. This doesn't slow down our code, because the python just configures the keyframes, and then the engine actually runs on C++ afterwards.</p>
     <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_9fc632a8c6514a1793391c845ece89fc~mv2.png" alt="Model creation script" loading="lazy" style="margin-top:24px;">
     <img class="section-image" src="https://static.wixstatic.com/media/71b3eb_24ba03e3dd5b42eea4b557117d07365f~mv2.png" alt="World properties script" loading="lazy" style="margin-top:16px;">
   </div>
 
   <h2 class="chapter-title" id="rtl">fpga / rtl accelerator</h2>
-  <p class="article-date">2026</p>
+  <p class="article-date">August 2026</p>
 
   <div class="section">
-    <p><a href="https://github.com/b-adamson/festi/tree/main/fpga/point_sampler" target="_blank" rel="noopener" style="text-decoration: underline;">point_sampler</a> is a small custom circuit, written in SystemVerilog, a hardware description language, rather than a program in the usual sense, that offloads one calculation from festi's C++ engine into dedicated hardware. It runs on a Kria K26 (a Zynq UltraScale+ chip: Arm CPU cores and reprogrammable circuitry on one piece of silicon), talking to the C++ side over AXI4-Lite, a standard protocol for a CPU to read and write registers on a peripheral. The calculation itself is the last line of <em>addRndInstance()</em> in <em>src/model.cpp</em>: given a triangle and a randomly sampled point on it (as fractions u, v), work out the actual 3D position that point corresponds to. That's the same interpolation a GPU does per-pixel when shading triangles, so it doubles as a first step toward a rasterizer built from scratch.</p>
+    <p><a href="https://github.com/b-adamson/festi/tree/main/fpga/point_sampler" target="_blank" rel="noopener" style="text-decoration: underline;">point_sampler</a> is a pipelined point-sampling accelerator in SystemVerilog, talking to Festi's C++ engine over AXI4-Lite, running on a Kria K26 (a Zynq UltraScale+ chip, Arm cores and reprogrammable logic on one die). It's a small custom circuit rather than a program in the usual sense: SystemVerilog describes wires, registers and logic gates, not instructions that run in sequence. The calculation it offloads is the last line of <em>addRndInstance()</em> in <em>src/model.cpp</em>: given a triangle and a randomly sampled point on it (as fractions u, v), work out the actual 3D position that point corresponds to. That's the same interpolation a GPU does per-pixel when shading triangles, so it doubles as a first step toward a rasteriser built from scratch.</p>
   </div>
 
   <h2 class="chapter-title">the pipeline</h2>
@@ -577,15 +575,15 @@
   </div>
 
   <div class="section">
-    <p>The accelerator is wired directly to the chip's Arm cores and can be loaded onto the board live, while Linux keeps running, with no reboot. A small device-tree file tells Linux where it lives and that it should be treated as a plain, raw register block rather than anything more involved.</p>
-    <p>A small Python program runs on the board itself, talks to those registers directly, and listens on the network for requests: one line of triangle data in, one line of result out. A second small program on the dev machine forwards festi's requests to it over ethernet, the same path the engine already calls to get a result, so swapping the CPU formula for real hardware needed no changes to festi's own code.</p>
+    <p>The accelerator is wired directly to the chip's Arm cores and can be loaded onto the board live, while Linux keeps running, with no reboot. A device-tree overlay tells Linux where it lives and that it should be treated as a plain, raw register block (<code>generic-uio</code>) rather than anything more involved.</p>
+    <p>A small Python program runs on the board itself, talks to those registers directly, and listens on the network for requests: one line of triangle data in, one line of result out. A second small program on the dev machine forwards Festi's requests to it over ethernet, the same path the engine already calls to get a result, so swapping the CPU formula for real hardware needed no changes to Festi's own code.</p>
   </div>
 
   <h2 class="chapter-title">verification</h2>
 
   <div class="section">
     <p>Before trusting this on real hardware, it's checked entirely in simulation first. A plain Python script computes the "obvious" correct answer using ordinary decimal math; a simulated version of the actual circuit computes its own answer the real way, bit by bit; a third script compares the two. Current run: 200 test cases, worst-case difference 0.011905, comfortably inside the 0.05 margin allowed for the rounding error fixed-point math is expected to have. It's tight enough, though, that an actual mistake in the circuit would still show up as a clear failure rather than hiding in that margin.</p>
-    <p>Testing on the real chip happens in two stages, cheap first. The core is first tried out completely standalone, talked to only over a basic debug cable (JTAG) plugged straight into a laptop, nothing else on the board involved yet. Only once that works does it get connected to the real interface Linux and the CPU actually use. The debug-cable version only works with a laptop physically attached, and has to be reloaded every time the board loses power. Fine for a quick check, useless day to day, which is exactly why the real interface exists for actual use.</p>
+    <p>Testing on the real chip happens in two stages, cheap first. The core is first tried out completely standalone over JTAG, with a laptop plugged straight in and nothing else on the board involved. Only once that works does it get connected to the real interface Linux and the CPU actually use. The JTAG version only works with a laptop physically attached, and has to be reloaded every time the board loses power. Fine for a quick check, useless day to day, which is exactly why the real interface exists for actual use.</p>
   </div>
 
   <h2 class="chapter-title">numbers</h2>
@@ -593,6 +591,13 @@
   <div class="section">
     <p>From the routed design (Vivado 2026.1, xck26-sfvc784-2LV): timing closes on the PS's default 97MHz PL clock (10.312ns period) with a worst setup slack of +4.316ns, so there's clearly room to push the clock faster, I just haven't tried yet. Worst hold slack is +0.011ns though, close enough to zero that I wouldn't trust it to survive a different placement seed without rechecking first.</p>
     <p>Utilization is tiny: 597 LUTs (0.51%), 1267 registers (0.54%), 36 DSP48E2 slices (2.88%), 0 block RAM. Most of that is the three parallel fixed-point multiplies plus the pipeline registers. There was never any need for memory here, since nothing beyond a single in-flight sample gets stored.</p>
+  </div>
+
+  <h2 class="chapter-title">performance</h2>
+
+  <div class="section">
+    <p>None of the numbers above answer the question that actually matters: is this faster than the C++ line it replaces? No, and not close. The core itself does one sample per clock at 97MHz, so in isolation it could sustain tens of millions of samples a second. Nothing downstream of it can keep up with that. Even staying entirely on-chip, loading one sample over AXI4-Lite is eleven register writes, a strobe, and a poll before three reads back out, each one its own full AXI handshake, so the interface itself can't feed the pipeline anywhere near its own one-sample-per-cycle rate. Once a real request leaves the host over ethernet to the board and back, that's not even the bottleneck any more: it's single-digit milliseconds per instance round trip, against a CPU doing the same three multiplies and two adds in a couple of nanoseconds. That's on the order of six orders of magnitude slower end to end than the software it replaces, and it's inherent to a per-sample request/response protocol over a network link, not something a faster clock or a wider pipeline would fix.</p>
+    <p>That's fine, because it was never the point. The point was the pipeline, the AXI4-Lite interface, and the verification flow around it, not a speedup. A version of this actually built for throughput would look nothing like the request/response shape above: batch thousands of samples into a buffer, move them on and off chip over full AXI4 (which supports burst transfers, unlike AXI4-Lite) via a DMA engine instead of the CPU poking individual registers, let the pipeline run flat out at one sample per cycle once the data's actually there, and raise a single interrupt when the whole batch is done.</p>
   </div>
 
   <h2 class="chapter-title">what didn't work</h2>
