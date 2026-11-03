@@ -176,6 +176,7 @@
     .tok-attr { color: #fd971f; }
     .tok-num  { color: #ae81ff; }
     .tok-kw   { color: #f92672; }
+    .tok-com  { color: rgba(248,248,242,0.45); }
 
     .reg-table {
       width: 100%;
@@ -306,7 +307,7 @@
   </div>
 
   <div class="section">
-    <p>My part was the core: the instruction set, the virtual machine that runs it, and the debugger that steps backwards. The rule for the ISA is that every instruction has to be a bijection on the whole machine state. Addition becomes add-in-place, which subtraction undoes. A copy becomes an XOR into a register that&rsquo;s already zero. Nothing is ever simply overwritten.</p>
+    <p>Like most hackathon code now, most of this was written with Claude Code. My job was the core of the machine: the instruction set, the virtual machine that runs it, and the debugger that steps backwards. The rule for the ISA is that every instruction has to be a bijection on the whole machine state. Addition becomes add-in-place, which subtraction undoes. A copy becomes an XOR into a register that&rsquo;s already zero. Nothing is ever simply overwritten.</p>
     <table class="reg-table" style="margin-top: 22px;">
       <tr><th>instruction</th><th>effect</th><th>inverse</th></tr>
       <tr><td>ADD ra, rb</td><td>ra += rb</td><td>ra -= rb</td></tr>
@@ -314,7 +315,65 @@
       <tr><td>ROLI ra, k</td><td>rotate left by k</td><td>rotate left by 32 &minus; k</td></tr>
       <tr><td>CSWAP rc, ra, rb</td><td>if rc &ne; 0, swap ra and rb</td><td>itself</td></tr>
     </table>
-    <p class="caption">Four of the 19 instructions. The awkward cases are the ones that look harmless: <em>ADD r1, r1</em> doubles r1 and loses its top bit, so the machine faults if the two operands are the same register. CSWAP is a Fredkin gate, the conditional that makes branching possible without losing information.</p>
+    <p class="caption">Four of the 19 instructions. The awkward cases are the ones that look harmless: <em>ADD r1, r1</em> doubles r1 and loses its top bit, so the machine faults if the two operands are the same register. CSWAP is a Fredkin gate, a conditional that loses no information.</p>
+  </div>
+
+  <div class="section">
+    <p>In the VM, undoing a data instruction is the same code run with a flag flipped. Every case in the switch knows its own inverse:</p>
+    <pre class="code-block"><code><span class="tok-kw">case</span> Op::ADD:
+<span class="tok-kw">case</span> Op::SUB: {
+    <span class="tok-kw">if</span> (a == b) <span class="tok-kw">return</span> <span class="tok-fn">fault</span>(<span class="tok-attr">"ADD/SUB operands must differ"</span>);
+    <span class="tok-kw">const bool</span> add = (i.op == Op::ADD) != inverse;
+    regs_[a] = add ? regs_[a] + regs_[b] : regs_[a] - regs_[b];
+    <span class="tok-kw">break</span>;
+}
+<span class="tok-kw">case</span> Op::ROLI: {
+    <span class="tok-kw">const</span> uint32_t k = i.imm18 &amp; <span class="tok-num">31</span>;
+    regs_[a] = <span class="tok-fn">rotl</span>(regs_[a], inverse ? (<span class="tok-num">32</span> - k) &amp; <span class="tok-num">31</span> : k);
+    <span class="tok-kw">break</span>;
+}</code></pre>
+    <p class="caption">From <em>reversible_vm.cpp</em>. ADD run backwards is SUB, and SUB run backwards is ADD, so one line covers all four cases.</p>
+  </div>
+
+  <div class="section">
+    <p>Data is the easy half. The hard part is control flow. Going forwards, the program counter always knows where to go next. Going backwards, it has to work out where it <em>came from</em>, and a normal jump forgets that. If two paths lead to the same line, which one did you take?</p>
+    <p>The fix is a landing instruction, <em>LND</em>. Every jump has to land on one, and the LND carries a condition that is true exactly when you arrived by the jump rather than by falling through from the line above. Stepping back, the VM checks the condition at the landing. If it holds, it returns to the jump. If not, it steps to the previous line. It works out the past from the present state alone, with no log.</p>
+    <pre class="code-block"><code><span class="tok-kw">if</span> (i.op == Op::LND &amp;&amp; <span class="tok-fn">cond</span>(i)) {   <span class="tok-com">// we arrived by the jump from i.target</span>
+    <span class="tok-kw">const</span> Instr br = <span class="tok-fn">decode</span>(prog_.code[i.target]);
+    <span class="tok-kw">if</span> (br.op != Op::BR || br.target != q)
+        <span class="tok-kw">return</span> <span class="tok-fn">fault</span>(<span class="tok-attr">"LND source is not a BR to this landing"</span>);
+    pc_ = i.target;
+    <span class="tok-kw">return</span> RVM_OK;
+}</code></pre>
+    <p class="caption">Undoing a jump. Calls work the same way: a <em>PROC</em> marks each procedure&rsquo;s entry, and the return address is XORed onto the stack and XORed off again, leaving the slot zero.</p>
+  </div>
+
+  <div class="section">
+    <p>If you can never throw anything away, temporaries pile up. Bennett&rsquo;s trick from 1973 handles this: compute what you need into a scratch register, copy or use the result, then run the computation backwards to clear the scratch register again. The assembler does this for you. You write the compute block once, and it writes the undo:</p>
+    <pre class="code-block"><code><span class="tok-kw">.compute</span>                <span class="tok-com">; r2 = rotl(r1, 3) + 7</span>
+<span class="tok-fn">xor</span>    r2, r1
+<span class="tok-fn">roli</span>   r2, <span class="tok-num">3</span>
+<span class="tok-fn">addi</span>   r2, <span class="tok-num">7</span>
+<span class="tok-kw">.use</span>
+<span class="tok-fn">xst</span>    r2, [r0+<span class="tok-num">0x100</span>]   <span class="tok-com">; memory[0x100] ^= 47</span>
+<span class="tok-kw">.uncompute</span>              <span class="tok-com">; assembler writes the inverse; r2 = 0 again</span></code></pre>
+    <p class="caption">From <em>examples/asm/bennett.s</em>. Whatever a program can&rsquo;t uncompute stays behind as &ldquo;garbage&rdquo;. A sort, for example, has to remember which way it sorted.</p>
+  </div>
+
+  <div class="section">
+    <p>On top of the assembler there&rsquo;s a small language, <em>rev</em>, in the family of Janus (1982). It looks almost normal, but every statement has an inverse. Assignment only comes as <em>+=</em>, <em>-=</em>, <em>^=</em> or a swap, and a loop has an entry condition as well as an exit condition, so it can be run backwards too. The compiler uses Bennett&rsquo;s trick on every expression.</p>
+    <pre class="code-block"><code><span class="tok-kw">proc</span> step {
+  a += b;
+  a &lt;=&gt; b;
+}
+
+<span class="tok-kw">main</span> {
+  <span class="tok-kw">from</span> (i == <span class="tok-num">0</span>) <span class="tok-kw">loop</span> {
+    <span class="tok-kw">call</span> step;
+    i += <span class="tok-num">1</span>;
+  } <span class="tok-kw">until</span> (i == n);
+}</code></pre>
+    <p class="caption">Reversible Fibonacci. After n steps (a, b) holds (fib(n), fib(n+1)). Run it backwards and it turns them back into (0, 1).</p>
   </div>
 
   <div class="section">
@@ -332,7 +391,7 @@
       <tr><td>reversible</td><td>8 bytes (just the input)</td></tr>
     </table>
     <p class="caption">The reversible machine runs 3.0 to 3.3 times as many instructions as the conventional versions. Checkpointing is roughly level on memory and faster at jumping a long way back. Pong has a tiny state, which suits checkpointing.</p>
-    <p style="margin-top: 22px;">So it&rsquo;s a trade, not a free lunch. None of the idea is new either: Landauer and Bennett worked out the theory decades ago, and languages like Janus have existed since the 1980s. What we did was build the whole thing end to end and measure it honestly.</p>
+    <p style="margin-top: 22px;">So it&rsquo;s a trade, not a free lunch. None of the idea is new either: Landauer and Bennett worked out the theory in the 1960s and 70s, and languages like Janus have existed since the 1980s. What we did was build the whole thing end to end and measure it honestly.</p>
   </div>
 
 </div>
