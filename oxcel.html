@@ -176,6 +176,7 @@
     .tok-attr { color: #fd971f; }
     .tok-num  { color: #ae81ff; }
     .tok-kw   { color: #f92672; }
+    .tok-com  { color: rgba(248,248,242,0.6); }
 
     .reg-table {
       width: 100%;
@@ -205,6 +206,9 @@
       font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
       white-space: nowrap;
     }
+
+    .wrap-table td:nth-child(2) { white-space: normal; font-family: inherit; }
+    .wrap-table { white-space: normal !important; }
 
     .caption {
       margin-top: 10px !important;
@@ -306,12 +310,36 @@
   </div>
 
   <div class="section">
-    <p>The hard part isn&rsquo;t generating questions, it&rsquo;s trusting them. I can&rsquo;t check every output by hand, and a wrong answer in a maths question is worse than no question. So generated questions are checked before they reach anyone. Ones that don&rsquo;t meet the bar are edited, or thrown away and regenerated, and questions in the bank are reviewed by Oxford students.</p>
-    <p>The failures that taught me the most were the ones that passed every check and were still wrong, like a question that is technically correct but nothing like the real exam. Catching those is most of the work.</p>
+    <p>The hard part isn&rsquo;t generating questions, it&rsquo;s trusting them. A language model will happily write a question whose &ldquo;correct&rdquo; option is wrong, and a wrong answer in a maths question is worse than no question. So every generated question goes through a pipeline before anyone sees it:</p>
+    <table class="reg-table wrap-table" style="margin-top: 22px;">
+      <tr><th>step</th><th>what happens</th></tr>
+      <tr><td>1. examples</td><td>pick real past-paper questions on the same subject, topic and difficulty to show the model the style</td></tr>
+      <tr><td>2. draft</td><td>the model writes the question, five options, a worked solution, and a short Python program that computes the answer</td></tr>
+      <tr><td>3. check</td><td>structural checks (five distinct options, answer label matches its text), with one repair attempt</td></tr>
+      <tr><td>4. verify</td><td>run the Python, then match its output to the options. It must match exactly one option, and that option must be the one the model claimed</td></tr>
+      <tr><td>5. dedupe</td><td>reject anything too close to a recently generated question</td></tr>
+    </table>
+    <p class="caption">Any failure at step 4 throws the whole draft away and starts again. There&rsquo;s no repair, because a wrong computed answer means the question itself is suspect.</p>
   </div>
 
   <div class="section">
-    <p>Around the question bank there&rsquo;s a timed past-paper mode, a quick mode that steers towards your weak topics, progress tracking by topic, and a tutor that can read your working on an on-screen whiteboard and give a hint without giving away the answer.</p>
+    <p>Step 4 is the interesting one. The model is much better at writing a few lines of code that compute an answer than at doing the arithmetic in its head, so the code becomes the check. Matching the result to an option is harder than it sounds, because &ldquo;0.5&rdquo;, &ldquo;1/2&rdquo; and &ldquo;50%&rdquo; are the same answer. The matcher tries the cheapest comparison first:</p>
+    <pre class="code-block"><code><span class="tok-com">T0  normalised exact string compare</span>
+<span class="tok-com">T1  numeric parse with relative tolerance (units, sci notation, fractions)</span>
+<span class="tok-com">T2  sympy symbolic equivalence (surds, pi, exact forms)</span>
+<span class="tok-com">T3  optional LLM fallback (only if T0 to T2 match nothing)</span></code></pre>
+    <p class="caption">If two options both match, the question fails outright. A question with two equal options is broken, and guessing could approve a wrong answer.</p>
+    <p style="margin-top: 22px;">The model&rsquo;s code runs in a sandbox: a size limit, a static check of the syntax tree (only maths imports like <em>math</em>, <em>sympy</em> and <em>fractions</em>, no <em>open</em> or <em>eval</em>), then a separate process with CPU, memory and file limits that is killed on timeout. The code comes from my own model rather than from users, so the main risk is accidents like infinite loops, and the defences are cheap and layered rather than bulletproof.</p>
+  </div>
+
+  <div class="section">
+    <p>To find out whether the checker can be trusted, I ran it on past-paper questions that have official answer keys. The model writes code from the question alone, never seeing the key, and the pipeline&rsquo;s chosen option is compared with the official answer. The disagreements are the useful part, because each one is either the model misunderstanding the science or an error in my own extracted copy of the past papers.</p>
+    <p>There are still failures it can&rsquo;t catch, like a question that is technically correct but nothing like the real exam. That&rsquo;s why the question bank is also reviewed by Oxford students, and users can report a question with one click.</p>
+  </div>
+
+  <div class="section">
+    <p>Figures are split the same way. Tables and simple graphs are described by the model as structured data and drawn as SVG, so their numbers are exact. Only genuinely complex diagrams go to an image model.</p>
+    <p>Around the questions there&rsquo;s a timed past-paper mode, a quick mode that steers towards your weak topics, progress tracking, and a tutor that reads your working on an on-screen whiteboard and gives a hint without giving away the answer. The stack is a Python (FastAPI) backend, a Next.js frontend, Supabase for accounts and data, and Stripe for subscriptions, with a rolling token budget per user to keep model costs under control.</p>
     <p>The biggest lesson was that once people are paying, reliability matters more than features. A new feature that works most of the time is worth less than the existing ones working every time.</p>
   </div>
 
