@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>B. Adamson</title>
+  <link rel="icon" href="assets/robot-icon.png" type="image/png">
+  <link rel="shortcut icon" href="assets/robot-icon.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/robot-icon.png">
+  <style>
+    @font-face {
+      font-family: 'futura-lt-w01-book';
+      font-style: normal;
+      font-weight: 400;
+      src: url('//static.parastorage.com/fonts/v2/790166f1-b347-4f16-8a29-f0c4931a7c35/v1/futura-lt-w01-book.woff2') format('woff2');
+      font-display: swap;
+    }
+
+    :root {
+      --bg: #2F3136;
+      --panel: rgba(255, 255, 255, 0.04);
+      --panel-border: rgba(255, 255, 255, 0.26);
+      --text: #f5f5f3;
+      --muted: rgba(245, 245, 243, 0.82);
+      --shadow: rgba(0, 0, 0, 0.38);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'futura-lt-w01-book', Futura, "Trebuchet MS", sans-serif;
+      letter-spacing: 0.01em;
+    }
+
+    body {
+      min-height: 100vh;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 70vh;
+      background:
+        linear-gradient(to bottom, rgba(47, 49, 54, 0) 0%, rgba(47, 49, 54, 0) 40%, #2F3136 100%),
+        radial-gradient(ellipse at 30% 20%, #1b2a33 0%, #0d1013 70%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .page,
+    .site-footer {
+      position: relative;
+      z-index: 1;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 28px 36px 80px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 72px;
+    }
+
+    .brand {
+      font-size: 2rem;
+      line-height: 1;
+      opacity: 0.95;
+      user-select: none;
+    }
+
+    .nav {
+      display: flex;
+      gap: 56px;
+      align-items: center;
+      justify-content: flex-end;
+      font-size: 0.92rem;
+      letter-spacing: 0.16em;
+      text-transform: lowercase;
+    }
+
+    .nav a {
+      opacity: 0.8;
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .nav a:hover {
+      opacity: 1;
+      transform: translateY(-1px);
+    }
+
+    .article-title {
+      margin: 0 0 56px;
+      font-size: clamp(2rem, 4.5vw, 3.8rem);
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: 0.03em;
+      text-transform: lowercase;
+    }
+
+    .article-date {
+      margin: -40px 0 48px;
+      font-size: 0.78rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0.5;
+    }
+
+    .section {
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      padding: 32px 36px;
+      margin-bottom: 20px;
+    }
+
+    .section p {
+      margin: 0;
+      font-size: clamp(0.98rem, 1.4vw, 1.15rem);
+      line-height: 1.78;
+      color: var(--muted);
+    }
+
+    .section p + p {
+      margin-top: 18px;
+    }
+
+    .section-image {
+      width: 100%;
+      display: block;
+      margin-top: 24px;
+      object-fit: cover;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--panel-border);
+    }
+
+    pre.code-block {
+      margin-top: 20px !important;
+      padding: 20px 22px;
+      border: 1px solid var(--panel-border);
+      overflow-x: auto;
+      background: rgba(0, 0, 0, 0.28) !important;
+      border-radius: 0 !important;
+    }
+
+    .code-block code {
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.88rem;
+      line-height: 1.65;
+      white-space: pre;
+      color: #f8f8f2;
+    }
+
+    .tok-mod  { color: #66d9ef; }
+    .tok-fn   { color: #a6e22e; }
+    .tok-attr { color: #fd971f; }
+    .tok-num  { color: #ae81ff; }
+    .tok-kw   { color: #f92672; }
+
+    .reg-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .reg-table th,
+    .reg-table td {
+      text-align: left;
+      padding: 10px 14px;
+      border: 1px solid var(--panel-border);
+      color: var(--muted);
+    }
+
+    .reg-table th {
+      color: var(--text);
+      opacity: 0.85;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+    }
+
+    .reg-table td:first-child,
+    .reg-table td:nth-child(2) {
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      white-space: nowrap;
+    }
+
+    .caption {
+      margin-top: 10px !important;
+      font-size: 0.82rem !important;
+      line-height: 1.6 !important;
+      color: var(--muted);
+      opacity: 0.6;
+      letter-spacing: 0.03em;
+    }
+
+    .appendix-divider {
+      border: none;
+      border-top: 1px solid var(--panel-border);
+      margin: 56px 0 40px;
+    }
+
+    .appendix-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0.5;
+      margin: 0 0 28px;
+    }
+
+    .appendix-title {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text);
+      margin: 0 0 20px;
+      opacity: 0.85;
+    }
+
+    .site-footer {
+      display: flex;
+      gap: 40px;
+      justify-content: center;
+      padding: 48px 36px 32px;
+      font-size: 0.82rem;
+      letter-spacing: 0.16em;
+      text-transform: lowercase;
+    }
+
+    .site-footer a {
+      color: var(--muted);
+      opacity: 0.6;
+      transition: opacity 160ms ease;
+    }
+
+    .site-footer a:hover {
+      opacity: 1;
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        padding: 18px 16px 48px;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 40px;
+      }
+
+      .nav {
+        gap: 24px;
+        flex-wrap: wrap;
+        font-size: 0.82rem;
+      }
+
+      .section {
+        padding: 22px 20px;
+      }
+
+      .reg-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+    </style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="topbar">
+    <a href="index.html" class="brand">b</a>
+  </header>
+
+  <h1 class="article-title">palindrome: a computer that can&rsquo;t forget</h1>
+  <p class="article-date">October 2026 &middot; OxHack, joint 2nd place</p>
+
+  <div class="section">
+    <p>Every computer you have used forgets. When it runs <em>x = 5</em>, whatever <em>x</em> held before is gone. That is why you can&rsquo;t just run a program backwards, and why a debugger that lets you step back has to keep a diary of everything the program overwrote.</p>
+    <p>At OxHack 2026 (24 hours, theme: <em>time</em>, team of four) we built a machine where no instruction is allowed to throw anything away. Every step has an exact inverse, so going back in time doesn&rsquo;t mean reading a diary, it means running the inverses. We came joint second. You can <a href="https://reversible-machine.vercel.app" target="_blank" rel="noopener" style="text-decoration: underline;">try it in the browser</a> (pick Pong, lose, then step back) and the code is on <a href="https://github.com/Hello-Atharv/Palindrome" target="_blank" rel="noopener" style="text-decoration: underline;">GitHub</a>.</p>
+  </div>
+
+  <div class="section">
+    <p>My part was the core: the instruction set, the virtual machine that runs it, and the debugger that steps backwards. The rule for the ISA is that every instruction has to be a bijection on the whole machine state. Addition becomes add-in-place, which subtraction undoes. A copy becomes an XOR into a register that&rsquo;s already zero. Nothing is ever simply overwritten.</p>
+    <table class="reg-table" style="margin-top: 22px;">
+      <tr><th>instruction</th><th>effect</th><th>inverse</th></tr>
+      <tr><td>ADD ra, rb</td><td>ra += rb</td><td>ra -= rb</td></tr>
+      <tr><td>XOR ra, rb</td><td>ra ^= rb</td><td>itself</td></tr>
+      <tr><td>ROLI ra, k</td><td>rotate left by k</td><td>rotate left by 32 &minus; k</td></tr>
+      <tr><td>CSWAP rc, ra, rb</td><td>if rc &ne; 0, swap ra and rb</td><td>itself</td></tr>
+    </table>
+    <p class="caption">Four of the 19 instructions. The awkward cases are the ones that look harmless: <em>ADD r1, r1</em> doubles r1 and loses its top bit, so the machine faults if the two operands are the same register. CSWAP is a Fredkin gate, the conditional that makes branching possible without losing information.</p>
+  </div>
+
+  <div class="section">
+    <p>To check the machine, there are two engines behind the same interface. One runs normally and keeps a full log of every change, so it is easy to trust. The reversible one keeps nothing. Tests run both side by side and compare their state after every step, including random jumps forwards and backwards in time. When we broke the inverse of an instruction on purpose, the tests caught it.</p>
+    <p>The debugger sits on top of the reversible engine. Because stepping back is free, it can answer &ldquo;which line last wrote this variable?&rdquo; by running time backwards until the value changes, while holding 0 bytes of history.</p>
+  </div>
+
+  <div class="section">
+    <p>Undoing isn&rsquo;t free though, the cost just moves. You can&rsquo;t overwrite, so programs have to copy, compute, then uncompute their temporaries. We wrote conventional versions of the same programs and measured both:</p>
+    <table class="reg-table" style="margin-top: 22px;">
+      <tr><th>pong, rewinding</th><th>memory per frame</th></tr>
+      <tr><td>naive log</td><td>19,145 bytes</td></tr>
+      <tr><td>bit-packed log</td><td>126 bytes</td></tr>
+      <tr><td>checkpoint every 10k steps</td><td>15 bytes</td></tr>
+      <tr><td>reversible</td><td>8 bytes (just the input)</td></tr>
+    </table>
+    <p class="caption">The reversible machine runs 3.0 to 3.3 times as many instructions as the conventional versions. Checkpointing is roughly level on memory and faster at jumping a long way back. Pong has a tiny state, which suits checkpointing.</p>
+    <p style="margin-top: 22px;">So it&rsquo;s a trade, not a free lunch. None of the idea is new either: Landauer and Bennett worked out the theory decades ago, and languages like Janus have existed since the 1980s. What we did was build the whole thing end to end and measure it honestly.</p>
+  </div>
+
+</div>
+
+<footer class="site-footer">
+  <a href="https://www.youtube.com/@badamson" target="_blank" rel="noopener">youtube</a>
+  <a href="https://github.com/b-adamson/" target="_blank" rel="noopener">github</a>
+</footer>
+
+</body>
+</html>

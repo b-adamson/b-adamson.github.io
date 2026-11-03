@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b2a33"/>
+      <stop offset="1" stop-color="#0d1013"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#g)"/>
+  <g font-family="Consolas, 'Liberation Mono', Menlo, monospace" font-size="30" fill="#f5f5f3">
+    <text x="70" y="80" opacity="0.9"><tspan fill="#66d9ef">ADD</tspan>  r1, r2   <tspan fill="#a6e22e">r1 += r2</tspan></text>
+    <text x="70" y="125" opacity="0.9"><tspan fill="#66d9ef">XOR</tspan>  r3, r1   <tspan fill="#a6e22e">r3 ^= r1</tspan></text>
+    <text x="70" y="170" opacity="0.9"><tspan fill="#66d9ef">ROLI</tspan> r3, 7    <tspan fill="#a6e22e">rotl(r3, 7)</tspan></text>
+    <text x="70" y="220" opacity="0.35" font-size="26">&#8212; step back &#8212;</text>
+    <text x="70" y="265" opacity="0.55"><tspan fill="#f92672">ROLI</tspan> r3, 25   <tspan fill="#fd971f">rotl(r3, 25)</tspan></text>
+  </g>
+</svg>
