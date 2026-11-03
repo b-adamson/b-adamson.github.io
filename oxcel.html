@@ -320,6 +320,8 @@
       <tr><td>5. dedupe</td><td>reject anything too close to a recently generated question</td></tr>
     </table>
     <p class="caption">Any failure at step 4 throws the whole draft away and starts again. There&rsquo;s no repair, because a wrong computed answer means the question itself is suspect.</p>
+    <img src="assets/oxcel-solution.jpg" alt="A generated ESAT algebra question with its worked solution" class="section-image">
+    <p class="caption">A generated question (&ldquo;ESAT &middot; Original&rdquo; rather than a past paper) that made it through, with its worked solution.</p>
   </div>
 
   <div class="section">
@@ -340,6 +342,8 @@
   <div class="section">
     <p>Figures are split the same way. Tables and simple graphs are described by the model as structured data and drawn as SVG, so their numbers are exact. Only genuinely complex diagrams go to an image model.</p>
     <p>Around the questions there&rsquo;s a timed past-paper mode, a quick mode that steers towards your weak topics, progress tracking, and a tutor that reads your working on an on-screen whiteboard and gives a hint without giving away the answer. The stack is a Python (FastAPI) backend, a Next.js frontend, Supabase for accounts and data, and Stripe for subscriptions, with a rolling token budget per user to keep model costs under control.</p>
+    <img src="assets/oxcel-whiteboard.jpg" alt="The tutor reading handwritten working on the whiteboard and giving a hint" class="section-image">
+    <p class="caption">The tutor reads the handwritten working on the left and points out the slip (adding 2 to the first term as well) without solving the question.</p>
     <p>The biggest lesson was that once people are paying, reliability matters more than features. A new feature that works most of the time is worth less than the existing ones working every time.</p>
   </div>
 
